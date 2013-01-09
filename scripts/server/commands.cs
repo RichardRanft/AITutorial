@@ -173,7 +173,7 @@ function serverCmdspawnBaddie(%client)
     // Create a new, generic AI Player
     // Position will be at the camera's location
     // Datablock will determine the type of actor
-    %enemy = AIManager.addUnit("", %client.camera.getPosition(), "DefaultPlayerData");
+    %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData");
     %enemy.team = 0;
     //MissionGroup.add(%enemy);
 }
@@ -406,7 +406,6 @@ function serverCmdspawnTeammate(%client, %source)
     %newBot = %client.AIMan.addUnit("", %spawnName, %spawnName.spawnDatablock);
     %spawnLocation = GameCore::pickPointInSpawnSphere(%newBot, %spawnName);
     %newBot.setTransform(%spawnLocation);
-    %newBot.team = %client.team;
 
     %x = getRandom(-10, 10);
     %y = getRandom(4, 10);
@@ -427,21 +426,21 @@ function serverCmdtoggleMultiSelect(%client, %flag)
 
 function attack(%unit, %target)
 {
-    if (%target.getState() $= "dead")
-        return;
-    if (%unit.getDatablock().mainWeapon.image !$= "")
-        %unit.mountImage(%unit.getDatablock().mainWeapon.image, 0);
-    else
-        %unit.mountImage(Lurker, 0);
-
-    %targetData = %target.getDataBlock();
-    %z = getWord(%targetData.boundingBox, 2) / 2;
-    %offset = "0 0" SPC %z;
-    %unit.setAimObject(%target, %offset);
+    //if (%target.getState() $= "dead")
+        //return;
+    //if (%unit.getDatablock().mainWeapon.image !$= "")
+        //%unit.mountImage(%unit.getDatablock().mainWeapon.image, 0);
+    //else
+        //%unit.mountImage(Lurker, 0);
+//
+    //%targetData = %target.getDataBlock();
+    //%z = getWord(%targetData.boundingBox, 2) / 2;
+    //%offset = "0 0" SPC %z;
+    //%unit.setAimObject(%target, %offset);
     %unit.target = %target;
-
+    %unit.attack(%target);
     // Tell our AI object to fire its weapon
-    %unit.setImageTrigger(0, 1);
+    //%unit.setImageTrigger(0, 1);
 }
 
 function multiSelect(%target, %team)
@@ -494,7 +493,7 @@ function addTeamBot(%bot, %team)
         new SimSet(%listName);
         MissionCleanup.add(%listName);
     }
-    
+    %bot.team = %team;
     %listName.add(%bot);
 }
 

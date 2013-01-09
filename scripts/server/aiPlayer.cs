@@ -64,6 +64,62 @@ function DemoPlayer::onEndSequence(%this,%obj,%slot)
    %obj.nextTask();
 }
 
+function DemoPlayerData::fire(%this, %obj)
+{
+    if (%obj.target.getState() $= "dead")
+        return;
+
+    %targetData = %obj.target.getDataBlock();
+    %z = getWord(%targetData.boundingBox, 2) / 2;
+    %offset = "0 0" SPC %z;
+    %obj.setAimObject(%obj.target, %offset);
+
+    // Tell our AI object to fire its weapon
+    %obj.setImageTrigger(0, 1);
+    %obj.schedule(64, setImageTrigger, 0, 0);
+    if (%obj.target.getState() !$= "dead")
+        %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
+}
+
+function AssaultUnitData::fire(%this, %obj)
+{
+    if (%obj.target.getState() $= "dead")
+    {
+        %obj.aimAt(0);
+        %obj.setImageTrigger(0, 0);
+        cancel(%obj.trigger);
+        return;
+    }
+    %fireState = %obj.getImageTrigger(0);
+    if (!%fireState)
+    {
+        %targetData = %obj.target.getDataBlock();
+        %z = getWord(%targetData.boundingBox, 2) / 2;
+        %offset = "0 0" SPC %z;
+        %obj.setAimObject(%obj.target, %offset);
+
+        // Tell our AI object to fire its weapon
+        %obj.setImageTrigger(0, 1);
+    }
+    %obj.checkTargetStatus();
+}
+
+function GrenadierUnitData::fire(%this, %obj)
+{
+    if (%obj.target.getState() $= "dead")
+        return;
+
+    %targetData = %obj.target.getDataBlock();
+    %z = getWord(%targetData.boundingBox, 2) / 2;
+    %offset = "0 0" SPC %z;
+    %obj.setAimObject(%obj.target, %offset);
+
+    // Tell our AI object to fire its weapon
+    %obj.setImageTrigger(0, 1);
+    %obj.schedule(64, setImageTrigger, 0, 0);
+    if (%obj.target.getState() !$= "dead")
+        %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
+}
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
@@ -79,6 +135,7 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
         %player.priority = %priority;
     else
         %player.priority = 1;
+    %player.shootingDelay = %datablock.shootingDelay;
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
     if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
@@ -103,6 +160,20 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 //-----------------------------------------------------------------------------
 // AIPlayer methods
 //-----------------------------------------------------------------------------
+function AIPlayer::checkTargetStatus(%this)
+{
+    if (isObject(%this.target))
+    {
+        if (%this.target.getState() $= "dead")
+        {
+            %this.pushTask("fire" TAB false);
+            %this.aimAt(0);
+            %this.target = "";
+        }
+    }
+    else
+        %this.schedule(%this.shootingDelay, checkTargetStatus);
+}
 
 function AIPlayer::followPath(%this,%path,%node)
 {
@@ -186,18 +257,36 @@ function AIPlayer::nextTask(%this)
 
 function AIPlayer::executeTask(%this,%index)
 {
-   %this.taskCurrent = %index;
-   eval(%this.getId() @"."@ %this.task[%index] @";");
+    %this.taskCurrent = %index;
+    %count = getFieldCount(%this.task[%index]);
+    if(%count == 1)
+        eval(%this.getId() @"."@ %this.task[%index] @"();");
+    else
+    {
+        %method = getField(%this.task[%index], 0);
+        for (%i = 1; %i < %count; %i++)
+        {
+            if (%i == 1)
+                %data = %data @ getField(%this.task[%index], %i);
+            else
+                %data = %data @ ", " @ getField(%this.task[%index], %i);
+        }
+        %data = trim(%data);
+        eval(%this.getId() @ "." @ %method @ "(" @ %data @ ");");
+        
+    }
 }
 
 //-----------------------------------------------------------------------------
 
 function AIPlayer::singleShot(%this)
 {
-   // The shooting delay is used to pulse the trigger
-   %this.setImageTrigger(0, true);
-   %this.setImageTrigger(0, false);
-   %this.trigger = %this.schedule(%this.shootingDelay, singleShot);
+    // The shooting delay is used to pulse the trigger
+    %this.setImageTrigger(0, true);
+    %this.schedule(64, setImageTrigger, 0, false);
+
+    if (%this.target !$= "" && isObject(%this.target) && %this.target.getState() !$= "dead")
+        %this.trigger = %this.schedule(%this.shootingDelay, singleShot);
 }
 
 //-----------------------------------------------------------------------------
@@ -212,16 +301,37 @@ function AIPlayer::done(%this,%time)
    %this.schedule(0, "delete");
 }
 
-function AIPlayer::fire(%this,%bool)
+function AIPlayer::fire(%this, %bool)
 {
-   if (%bool)
-   {
-      cancel(%this.trigger);
-      %this.singleShot();
-   }
-   else
-      cancel(%this.trigger);
-   %this.nextTask();
+    if (%this.target.getState() $= "dead")
+        return;
+    %datablock = %this.getDatablock();
+    %type = %datablock.getName();
+    if (%bool)
+    {
+        switch$(%type)
+        {
+            case "DefaultPlayerData":
+                cancel(%this.trigger);
+                %datablock.fire(%this);
+
+            case "AssaultUnitData":
+                cancel(%this.trigger);
+                %datablock.fire(%this);
+
+            case "GrenadierUnitData":
+                cancel(%this.trigger);
+                %datablock.fire(%this);
+        }
+    }
+    else
+    {
+        %fireState = %this.getImageTrigger(0);
+        if (%fireState)
+            %this.setImageTrigger(0, 0);
+        cancel(%this.trigger);
+    }
+    %this.nextTask();
 }
 
 function AIPlayer::aimAt(%this,%object)
@@ -229,6 +339,14 @@ function AIPlayer::aimAt(%this,%object)
    echo("Aim: "@ %object);
    %this.setAimObject(%object);
    %this.nextTask();
+}
+
+function AIPlayer::attack(%this, %target)
+{
+    %this.target = %target;
+    %this.pushTask("aimAt" TAB %target);
+    %this.pushTask("fire" TAB true);
+    %this.nextTask();
 }
 
 function AIPlayer::animate(%this,%seq)
@@ -346,6 +464,8 @@ function AIPlayer::think(%this)
         %this.target = %this.findTargetInMissionGroup(100.0);
     if (isObject(%this.target))
         echo(" @@@ Unit " @ %this @ " nearest enemy is : " @ %this.target @ " : Range = " @ VectorDist(%this.target.getPosition(), %this.getPosition()));
+    if (isObject(%this.target) && %this.target.getState() $= "dead")
+        pushTask("fire" TAB false);
 }
 
 //-----------------------------------------------------------------------------
@@ -397,12 +517,9 @@ function AIManager::think(%this)
             %range = VectorDist( %clientCamLoc, %unit.getPosition() );
             if (%this.priorityRadius < %range)
             {
-                if (%unit.priority < 2)
-                {
-                    %this.priorityGroup.remove(%unit);
-                    %this.idleGroup.add(%unit);
-                    %hCount--;
-                }
+                %this.priorityGroup.remove(%unit);
+                %this.idleGroup.add(%unit);
+                %hCount--;
                 echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
             }
             %index++;
@@ -417,12 +534,9 @@ function AIManager::think(%this)
             %range = VectorDist( %clientCamLoc, %unit.getPosition() );
             if (%this.priorityRadius > %range)
             {
-                if (%unit.priority > 0)
-                {
-                    %this.idleGroup.remove(%unit);
-                    %this.priorityGroup.add(%unit);
-                    %hCount--;
-                }
+                %this.idleGroup.remove(%unit);
+                %this.priorityGroup.add(%unit);
+                %hCount--;
                 echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
             }
             %index++;
