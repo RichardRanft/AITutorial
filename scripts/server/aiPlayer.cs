@@ -79,6 +79,8 @@ function DemoPlayerData::fire(%this, %obj)
     %obj.schedule(64, setImageTrigger, 0, 0);
     if (%obj.target.getState() !$= "dead")
         %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
+    %obj.pushTask("checkTargetStatus");
+    %obj.nextTask();
 }
 
 function AssaultUnitData::fire(%this, %obj)
@@ -101,7 +103,8 @@ function AssaultUnitData::fire(%this, %obj)
         // Tell our AI object to fire its weapon
         %obj.setImageTrigger(0, 1);
     }
-    %obj.checkTargetStatus();
+    %obj.pushTask("checkTargetStatus");
+    %obj.nextTask();
 }
 
 function GrenadierUnitData::fire(%this, %obj)
@@ -119,6 +122,8 @@ function GrenadierUnitData::fire(%this, %obj)
     %obj.schedule(64, setImageTrigger, 0, 0);
     if (%obj.target.getState() !$= "dead")
         %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
+    %obj.pushTask("checkTargetStatus");
+    %obj.nextTask();
 }
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
@@ -165,14 +170,19 @@ function AIPlayer::checkTargetStatus(%this)
     if (isObject(%this.target))
     {
         if (%this.target.getState() $= "dead")
-        {
-            %this.pushTask("fire" TAB false);
-            %this.aimAt(0);
-            %this.target = "";
-        }
+            %this.pushTask("clearTarget");
+        else
+            %this.schedule(%this.shootingDelay, pushTask, checkTargetStatus);
     }
-    else
-        %this.schedule(%this.shootingDelay, checkTargetStatus);
+    %this.nextTask();
+}
+
+function AIPlayer::clearTarget(%this)
+{
+    %this.aimAt(0);
+    %this.target = "";
+    %this.schedule(32, "setImageTrigger", 0, 0);
+    %this.nextTask();
 }
 
 function AIPlayer::followPath(%this,%path,%node)
@@ -229,51 +239,52 @@ function AIPlayer::moveToNode(%this,%index)
 
 function AIPlayer::pushTask(%this,%method)
 {
-   if (%this.taskIndex $= "")
-   {
-      %this.taskIndex = 0;
-      %this.taskCurrent = -1;
-   }
-   %this.task[%this.taskIndex] = %method;
-   %this.taskIndex++;
-   if (%this.taskCurrent == -1)
-      %this.executeTask(%this.taskIndex - 1);
+    if (!isObject(%this.taskList))
+        %this.taskList = new SimSet();
+    %task = new ScriptObject();
+    %task.method = %method;
+    %this.taskList.add(%task);
+    %this.executeTask();
 }
 
 function AIPlayer::clearTasks(%this)
 {
-   %this.taskIndex = 0;
-   %this.taskCurrent = -1;
+    if (isObject(%this.taskList))
+        %this.taskList.clear();
+    else
+        %this.taskList = new SimSet();
 }
 
 function AIPlayer::nextTask(%this)
 {
-   if (%this.taskCurrent != -1)
-      if (%this.taskCurrent < %this.taskIndex - 1)
-         %this.executeTask(%this.taskCurrent++);
-      else
-         %this.taskCurrent = -1;
+    %this.executeTask();
 }
 
-function AIPlayer::executeTask(%this,%index)
+function AIPlayer::executeTask(%this)
 {
-    %this.taskCurrent = %index;
-    %count = getFieldCount(%this.task[%index]);
-    if(%count == 1)
-        eval(%this.getId() @"."@ %this.task[%index] @"();");
-    else
+    %taskCount = %this.taskList.getCount();
+    if (%taskCount > 0)
     {
-        %method = getField(%this.task[%index], 0);
-        for (%i = 1; %i < %count; %i++)
+        %task = %this.taskList.getObject(0);
+        %count = getFieldCount(%task.method);
+        %taskMethod = %task.method;
+        %this.taskList.remove(%task);
+        %task.delete();
+        if(%count == 1)
+            eval(%this.getId() @"."@ %taskMethod @"();");
+        else
         {
-            if (%i == 1)
-                %data = %data @ getField(%this.task[%index], %i);
-            else
-                %data = %data @ ", " @ getField(%this.task[%index], %i);
+            %method = getField(%taskMethod, 0);
+            for (%i = 1; %i < %count; %i++)
+            {
+                if (%i == 1)
+                    %data = %data @ getField(%taskMethod, %i);
+                else
+                    %data = %data @ ", " @ getField(%taskMethod, %i);
+            }
+            %data = trim(%data);
+            eval(%this.getId() @ "." @ %method @ "(" @ %data @ ");");
         }
-        %data = trim(%data);
-        eval(%this.getId() @ "." @ %method @ "(" @ %data @ ");");
-        
     }
 }
 
@@ -459,13 +470,14 @@ function AIPlayer::getNearestTarget(%this, %radius)
 
 function AIPlayer::think(%this)
 {
-    %this.target = %this.getNearestTarget(100.0);
+    if (!isObject(%this.target))
+        %this.target = %this.getNearestTarget(100.0);
     if (!isObject(%this.target))
         %this.target = %this.findTargetInMissionGroup(100.0);
-    if (isObject(%this.target))
+    if (isObject(%this.target) && %this.target.getState() !$= "dead")
         echo(" @@@ Unit " @ %this @ " nearest enemy is : " @ %this.target @ " : Range = " @ VectorDist(%this.target.getPosition(), %this.getPosition()));
     if (isObject(%this.target) && %this.target.getState() $= "dead")
-        pushTask("fire" TAB false);
+        %this.pushTask("fire" TAB false);
 }
 
 //-----------------------------------------------------------------------------

@@ -274,10 +274,11 @@ function Armor::onDisabled(%this, %obj, %state)
    %obj.playDeathCry();
    %obj.playDeathAnimation();
    //%obj.setDamageFlash(0.75);
+   %teamList = "Team"@%obj.team@"List";
    
-   for (%i = 0; %i < Team1List.getCount(); %i++)
+   for (%i = 0; %i < %teamList.getCount(); %i++)
    {
-      %unit = Team1List.getObject(%i);
+      %unit = %teamList.getObject(%i);
       if (!isObject(%obj))
       {
          %unit.target = "";

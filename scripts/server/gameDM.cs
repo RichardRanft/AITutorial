@@ -88,7 +88,7 @@ function DeathMatchGame::onClientEnterGame(%game, %client)
     if (!AIManager.started)
         AIManager.start(200, 1000);
     if (%client.team $= "")
-        %client.team = ClientGroup.getCount();
+        %client.team = %client.getId();
 
     %client.AIMan = new ScriptObject()
     {

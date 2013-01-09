@@ -175,7 +175,7 @@ function serverCmdspawnBaddie(%client)
     // Datablock will determine the type of actor
     %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData");
     %enemy.team = 0;
-    //MissionGroup.add(%enemy);
+    MissionGroup.add(%enemy);
 }
 
 // ----------------------------------------------------------------------------
@@ -313,8 +313,7 @@ function serverCmdstopAttack(%client)
     for (%c = 0; %c < %teamList.getCount(); %c++)
     {
         %unit = %teamList.getObject(%c);
-        %unit.setAimObject(0, "0.0 0.0 0.0");
-        %unit.schedule(150, "setImageTrigger", 0, 0);
+        %unit.pushTask("clearTarget");
     }
 }
 

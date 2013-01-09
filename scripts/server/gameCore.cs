@@ -863,7 +863,7 @@ function GameCore::spawnPlayer(%game, %client, %spawnPoint, %noControl)
    // future reference
    %player.client = %client;
     if (%client.team $= "")
-        %client.team = ClientGroup.getCount();
+        %client.team = %client.getId();
     %teamList = "Team"@%client.team@"List";
     if (!isObject(%teamList))
     {
