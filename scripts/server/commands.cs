@@ -175,13 +175,7 @@ function serverCmdspawnBaddie(%client)
     // Datablock will determine the type of actor
     %enemy = AIManager.addUnit("", %client.camera.getPosition(), "DefaultPlayerData");
     %enemy.team = 0;
-    //%enemy = new AIPlayer() 
-    //{
-        //position = %client.camera.getPosition();
-        //datablock = "DefaultPlayerData";
-        //team = 9000;
-    //};
-    MissionGroup.add(%enemy);
+    //MissionGroup.add(%enemy);
 }
 
 // ----------------------------------------------------------------------------

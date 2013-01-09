@@ -68,29 +68,35 @@ function DemoPlayer::onEndSequence(%this,%obj,%slot)
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
 
-function AIPlayer::spawn(%name, %spawnPoint, %datablock)
+function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 {
     // Create the demo player object
     %player = new AiPlayer()
     {
         dataBlock = (%datablock !$= "" ? %datablock : DemoPlayer);
     };
+    if (%priority !$= "")
+        %player.priority = %priority;
+    else
+        %player.priority = 1;
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
-    if (isObject(%spawnPoint))
+    if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
         %player.setPosition(%spawnPoint.getPosition());
+    //else if (isObject(%spawnPoint) && getWordCount(%spawnPoint) > 1)
+        //%player.setPosition(%spawnPoint);
     else
         %player.setTransform(%spawnPoint);
     return %player;
 }
 
-function AIPlayer::spawnOnPath(%name, %path, %datablock)
+function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 {
    // Spawn a player and place him on the first node of the path
    if (!isObject(%path))
       return 0;
    %node = %path.getObject(0);
-   %player = AIPlayer::spawn(%name, %node.getTransform());
+   %player = AIPlayer::spawn(%name, %node.getTransform(), %datablock, %priority);
    return %player;
 }
 
@@ -343,24 +349,34 @@ function AIPlayer::think(%this)
 }
 
 //-----------------------------------------------------------------------------
-new ScriptObject(AIManager);
+if (!isObject(AIManager))
+    new ScriptObject(AIManager);
 
 function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius)
 {
-    %this.priorityGroup = new SimSet();
-    %this.idleGroup = new SimSet();
-    %this.think();
     %this.priorityRadius = %priorityRadius;
     %this.priorityTime = %priorityTime;
     %this.idleTime = %idleTime;
+
+    if (!isObject(%this.priorityGroup))
+        %this.priorityGroup = new SimSet();
+    else
+        %this.priorityGroup.clear();
+    if (!isObject(%this.idleGroup))
+        %this.idleGroup = new SimSet();
+    else
+        %this.idleGroup.clear();
+
+    %this.think();
     %this.priorityThink();
     %this.idleThink();
+
     %this.started = true;
 }
 
-function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %onPath)
+function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
-    %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %onPath);
+    %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %priority, %onPath);
     %this.loadOutUnit(%newUnit);
     %this.priorityGroup.add(%newUnit);
     return %newUnit;
@@ -376,10 +392,12 @@ function AIManager::think(%this)
         while (%index < %hCount)
         {
             %unit = %this.priorityGroup.getObject(%index);
+            if (!isObject(%unit))
+                %this.priorityGroup.remove(%unit);
             %range = VectorDist( %clientCamLoc, %unit.getPosition() );
             if (%this.priorityRadius < %range)
             {
-                if (%unit.priority > 0)
+                if (%unit.priority < 2)
                 {
                     %this.priorityGroup.remove(%unit);
                     %this.idleGroup.add(%unit);
@@ -394,10 +412,12 @@ function AIManager::think(%this)
         while (%index < %hCount)
         {
             %unit = %this.idleGroup.getObject(%index);
+            if (!isObject(%unit))
+                %this.idleGroup.remove(%unit);
             %range = VectorDist( %clientCamLoc, %unit.getPosition() );
             if (%this.priorityRadius > %range)
             {
-                if (%unit.priority < 1)
+                if (%unit.priority > 0)
                 {
                     %this.idleGroup.remove(%unit);
                     %this.priorityGroup.add(%unit);
@@ -437,19 +457,16 @@ function AIManager::idleThink(%this)
     %this.schedule(%this.idleTime, "idleThink");
 }
 
-function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %onPath)
+function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     if (%onPath)
     {
         %path = (%spawnLocation !$= "" ? %spawnLocation : "MissionGroup/Paths/Path1");
-        %player = AIPlayer::spawnOnPath(%name, %path, %datablock);
+        %player = AIPlayer::spawnOnPath(%name, %path, %datablock, %priority);
 
         if (isObject(%player))
         {
             %player.followPath(%path, -1);
-
-            // slow this sucker down, I'm tired of chasing him!
-            %player.setMoveSpeed(0.5);
 
             return %player;
         }
@@ -458,21 +475,17 @@ function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %onPath)
     }
     else
     {
-        if (%spawnLocation $= "")
+        %location = %spawnLocation;
+        if (%location $= "")
         {
             %count = PlayerDropPoints.getCount();
             %index = getRandom(0, %count - 1);
             %location = PlayerDropPoints.getObject(%index);
         }
-        %player = AIPlayer::spawn(%name, %location, %datablock);
+        %player = AIPlayer::spawn(%name, %location, %datablock, %priority);
 
         if (isObject(%player))
-        {
-            // slow this sucker down, I'm tired of chasing him!
-            %player.setMoveSpeed(0.5);
-
             return %player;
-        }
         else
             return 0;
     }

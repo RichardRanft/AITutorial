@@ -18,12 +18,12 @@ datablock PlayerData(AssaultUnitData : DefaultPlayerData)
 {
    shapeFile = "~/shapes/actors/boombot/boombot.dts";
    shootingDelay = 2000;
-   mainWeapon = "Ryder";
+   mainWeapon = "Lurker";
 };
 
 datablock PlayerData(GrenadierUnitData : DefaultPlayerData)
 {
    shapeFile = "~/shapes/actors/boombot/boombot.dts";
    shootingDelay = 2000;
-   mainWeapon = "Ryder";
+   mainWeapon = "LurkerGrenadeLauncher";
 };
