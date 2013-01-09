@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 // Demo Pathed AIPlayer.
 //-----------------------------------------------------------------------------
+$AIPlayer::GrenadierRange = 30.0;
 
 function DemoPlayer::onReachDestination(%this,%obj)
 {
@@ -69,16 +70,15 @@ function DemoPlayerData::fire(%this, %obj)
     if (%obj.target.getState() $= "dead")
         return;
 
-    %targetData = %obj.target.getDataBlock();
+    %targetData = %this.target.getDataBlock();
     %z = getWord(%targetData.boundingBox, 2) / 2;
     %offset = "0 0" SPC %z;
-    %obj.setAimObject(%obj.target, %offset);
 
     // Tell our AI object to fire its weapon
     %obj.setImageTrigger(0, 1);
     %obj.schedule(64, setImageTrigger, 0, 0);
     if (%obj.target.getState() !$= "dead")
-        %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
+        %obj.trigger = %this.schedule(%obj.shootingDelay, fire, 1);
     %obj.pushTask("checkTargetStatus");
     %obj.nextTask();
 }
@@ -92,17 +92,15 @@ function AssaultUnitData::fire(%this, %obj)
         cancel(%obj.trigger);
         return;
     }
-    %fireState = %obj.getImageTrigger(0);
-    if (!%fireState)
-    {
-        %targetData = %obj.target.getDataBlock();
-        %z = getWord(%targetData.boundingBox, 2) / 2;
-        %offset = "0 0" SPC %z;
-        %obj.setAimObject(%obj.target, %offset);
 
-        // Tell our AI object to fire its weapon
+    %targetData = %this.target.getDataBlock();
+    %z = getWord(%targetData.boundingBox, 2) / 2;
+    %offset = "0 0" SPC %z;
+    %fireState = %obj.getImageTrigger(0);
+
+    if (!%fireState)
         %obj.setImageTrigger(0, 1);
-    }
+
     %obj.pushTask("checkTargetStatus");
     %obj.nextTask();
 }
@@ -110,10 +108,25 @@ function AssaultUnitData::fire(%this, %obj)
 function GrenadierUnitData::fire(%this, %obj)
 {
     if (%obj.target.getState() $= "dead")
+    {
+        %obj.nextTask();
         return;
+    }
 
+    // ok, here we need to calculate offset by figuring the angle that we need to aim
+    // upwards to reach our target and move closer if we can't reach.
     %targetData = %obj.target.getDataBlock();
-    %z = getWord(%targetData.boundingBox, 2) / 2;
+    %distToTarget = %obj.getTargetDistance(%obj.target);
+
+    if (%distToTarget > $AIPlayer::GrenadierRange)
+    {
+        %obj.schedule(32, pushTask, "closeOnTarget");
+        %obj.schedule(64, pushTask, "fire" TAB true);
+        return;
+    }
+
+    %angleBoost = %distToTarget;
+    %z = (getWord(%targetData.boundingBox, 2) / 2) + %angleBoost;
     %offset = "0 0" SPC %z;
     %obj.setAimObject(%obj.target, %offset);
 
@@ -144,9 +157,7 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
     if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
-        %player.setPosition(%spawnPoint.getPosition());
-    //else if (isObject(%spawnPoint) && getWordCount(%spawnPoint) > 1)
-        //%player.setPosition(%spawnPoint);
+        %player.setTransform(%spawnPoint.getPosition());
     else
         %player.setTransform(%spawnPoint);
     return %player;
@@ -165,6 +176,95 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 //-----------------------------------------------------------------------------
 // AIPlayer methods
 //-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// Some handy getDistance/nearestTarget functions for the AI to use
+// ----------------------------------------------------------------------------
+
+function AIPlayer::getTargetDistance(%this, %target)
+{
+   %tgtPos = %target.getPosition();
+   %eyePoint = %this.getWorldBoxCenter();
+   %distance = VectorDist(%tgtPos, %eyePoint);
+   return %distance;
+}
+
+// Return angle between two vectors
+function AIPlayer::getAngle(%vec1, %vec2)
+{
+  %vec1n = VectorNormalize(%vec1);
+  %vec2n = VectorNormalize(%vec2);
+
+  %vdot = VectorDot(%vec1n, %vec2n);
+  %angle = mACos(%vdot);
+
+  // convert to degrees and return
+  %degangle = mRadToDeg(%angle);
+  return %degangle;
+}
+
+// return angle between eye vector and %pos
+function AIPlayer::getAngleTo(%this, %pos)
+{ return AIPlayer::getAngle(%this.getVectorTo(%pos), %this.getEyeVector()); }
+
+// Return position vector to a position
+function AIPlayer::getVectorTo(%this, %pos)
+{ return VectorSub(%pos, %this.getPosition()); }
+
+function AIPlayer::getTargetDirection(%this, %target)
+{
+    if (!%target)
+        return 0;
+    if (%target.getState() $= "dead")
+        return 0;
+    %tgtPos = %target.player.getPosition();
+    %angle = %this.getAngleTo(%tgtPos);
+    return %angle;
+}
+
+function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle)
+{
+    if ( %angle < 60 )
+    {
+        %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
+            $TypeMasks::InteriorObjectType | $TypeMasks::ShapeBaseObjectType | 
+            $TypeMasks::StaticObjectType | $TypeMasks::PlayerObjectType;
+
+        // Search!
+        %scanTarg = ContainerRayCast( %objPos, %targetPos, %searchMasks);
+        if (%scanTarg)
+        {
+            %obj = getWord(%scanTarg, 0);
+            %type = %obj.getClassName();
+            if (%type $= "Player" || %type $= "AiPlayer")
+            {
+                %this.target = %obj;
+                return true;
+            }
+            else
+            {
+                %this.target = "";
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+function AIPlayer::closeOnTarget(%this)
+{
+    if (isObject(%this.target))
+    {
+        if (%this.getTargetDistance(%this.target) > $AIPlayer::GrenadierRange)
+        {
+            %this.setMoveDestination(%this.target.getPosition());
+            %this.schedule(300, pushTask, "closeOnTarget");
+        }
+        else
+            %this.setMoveDestination(%this.getPosition());
+    }
+    %this.nextTask();
+}
+
 function AIPlayer::checkTargetStatus(%this)
 {
     if (isObject(%this.target))
@@ -314,8 +414,9 @@ function AIPlayer::done(%this,%time)
 
 function AIPlayer::fire(%this, %bool)
 {
-    if (%this.target.getState() $= "dead")
-        return;
+    if (!isObject(%this.target))
+        %bool = false;
+
     %datablock = %this.getDatablock();
     %type = %datablock.getName();
     if (%bool)
@@ -345,11 +446,11 @@ function AIPlayer::fire(%this, %bool)
     %this.nextTask();
 }
 
-function AIPlayer::aimAt(%this,%object)
+function AIPlayer::aimAt(%this, %object)
 {
-   echo("Aim: "@ %object);
-   %this.setAimObject(%object);
-   %this.nextTask();
+    %this.target = %object;
+    %this.setAimObject(%object, %offset);
+    %this.nextTask();
 }
 
 function AIPlayer::attack(%this, %target)
@@ -357,7 +458,6 @@ function AIPlayer::attack(%this, %target)
     %this.target = %target;
     %this.pushTask("aimAt" TAB %target);
     %this.pushTask("fire" TAB true);
-    %this.nextTask();
 }
 
 function AIPlayer::animate(%this,%seq)
@@ -373,12 +473,9 @@ function AIPlayer::animate(%this,%seq)
 
 function AIPlayer::getTargetDistance(%this, %target)
 {
-   echo("\c4AIPlayer::getTargetDistance("@ %this @", "@ %target @")");
-   $tgt = %target;
    %tgtPos = %target.getPosition();
    %eyePoint = %this.getWorldBoxCenter();
    %distance = VectorDist(%tgtPos, %eyePoint);
-   echo("Distance to target = "@ %distance);
    return %distance;
 }
 
@@ -471,11 +568,18 @@ function AIPlayer::getNearestTarget(%this, %radius)
 function AIPlayer::think(%this)
 {
     if (!isObject(%this.target))
-        %this.target = %this.getNearestTarget(100.0);
+    {
+        %target = %this.getNearestTarget(100.0);
+        if (isObject(%target))
+        {
+            if (%this.seeTarget(%this.getPosition(), %target.getPosition(), 80.0))
+                %this.target = %this.getNearestTarget(100.0);
+        }
+    }
     if (!isObject(%this.target))
-        %this.target = %this.findTargetInMissionGroup(100.0);
+        %this.target = %this.findTargetInMissionGroup(30.0);
     if (isObject(%this.target) && %this.target.getState() !$= "dead")
-        echo(" @@@ Unit " @ %this @ " nearest enemy is : " @ %this.target @ " : Range = " @ VectorDist(%this.target.getPosition(), %this.getPosition()));
+        %this.pushTask("attack" TAB %this.target);
     if (isObject(%this.target) && %this.target.getState() $= "dead")
         %this.pushTask("fire" TAB false);
 }

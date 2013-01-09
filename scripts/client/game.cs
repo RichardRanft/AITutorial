@@ -10,7 +10,7 @@
 function clientCmdGameStart(%seq)
 {
    PlayerListGui.zeroScores();
-   ControlsHelpDlg.toggle();
+   //ControlsHelpDlg.toggle();
 }
 
 function clientCmdGameEnd(%seq)

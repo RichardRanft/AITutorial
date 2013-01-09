@@ -315,9 +315,10 @@ datablock ShapeBaseImageData(LurkerWeaponImage)
    // Specify mount point & offset for 3rd person, and eye offset
    // for first person rendering.
    mountPoint = 0;
-   //firstPerson = false;
-   //useEyeNode = false;
-   animateOnServer = true;
+   firstPerson = false;
+   useEyeNode = false;
+   animateOnServer = false;
+   eyeOffset = "0.0 0.6 -0.1";
 
    // When firing from a point offset from the eye, muzzle correction
    // will adjust the muzzle vector to point to the eye LOS point.

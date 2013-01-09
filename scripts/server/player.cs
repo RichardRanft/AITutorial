@@ -274,20 +274,7 @@ function Armor::onDisabled(%this, %obj, %state)
    %obj.playDeathCry();
    %obj.playDeathAnimation();
    //%obj.setDamageFlash(0.75);
-   %teamList = "Team"@%obj.team@"List";
-   if (isObject(%teamList))
-   {
-       for (%i = 0; %i < %teamList.getCount(); %i++)
-       {
-          %unit = %teamList.getObject(%i);
-          if (!isObject(%obj))
-          {
-             %unit.target = "";
-             %unit.setAimObject(0);
-             %unit.schedule(150, "setImageTrigger", 0, 0);
-          }
-       }
-   }
+
    // Disable any vehicle map
    commandToClient(%obj.client, 'toggleVehicleMap', false);
 
