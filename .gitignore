@@ -1,0 +1,59 @@
+# Dev Files #
+###################
+*.xcworkspace
+*.xcuserdatad
+/tmp/*
+*.dso
+*.edso
+*.user
+*.sdf
+*.suo
+*.dir
+*.opensdf
+*.idea
+*.dSYM
+*.res
+*.cache
+*.exports
+*.opt
+*.hlsl
+*.png
+*.jpg
+*.dds
+*.dae
+New Project.exe
+New Project.dll
+linkmap.txt
+    
+# Compiled source #
+*.com
+*.class
+*.o
+*.so
+*.obj
+*.lib
+*.idb
+*.pdb
+*.ilk
+*.ipch
+*.lastbuildstate
+*.unsuccessfulbuild
+*.manifest
+*.tlog
+
+# Logs and databases #
+######################
+*.log
+*.sql
+# OS generated files #
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+/shaders/
+/tools/
+/web/

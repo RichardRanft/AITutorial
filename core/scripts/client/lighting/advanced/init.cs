@@ -1,0 +1,56 @@
+//-----------------------------------------------------------------------------
+// Torque
+// Copyright GarageGames, LLC 2011
+//-----------------------------------------------------------------------------
+
+///////////////////////////////////////////////////////////////////////////////
+// Default Prefs
+
+/*
+$pref::LightManager::sgAtlasMaxDynamicLights = "16";
+$pref::LightManager::sgDynamicShadowDetailSize = "0";
+$pref::LightManager::sgDynamicShadowQuality = "0";
+$pref::LightManager::sgLightingProfileAllowShadows = "1";
+$pref::LightManager::sgLightingProfileQuality = "0";
+$pref::LightManager::sgMaxBestLights = "10";
+$pref::LightManager::sgMultipleDynamicShadows = "1";
+$pref::LightManager::sgShowCacheStats = "0";
+$pref::LightManager::sgUseBloom = "";
+$pref::LightManager::sgUseDRLHighDynamicRange = "0";
+$pref::LightManager::sgUseDynamicRangeLighting = "0";
+$pref::LightManager::sgUseDynamicShadows = "1";
+$pref::LightManager::sgUseToneMapping = "";
+*/
+
+exec( "./shaders.cs" );
+exec( "./lightViz.cs" );
+exec( "./shadowViz.cs" );
+exec( "./shadowViz.gui" );
+
+function onActivateAdvancedLM()
+{
+   // Don't allow the offscreen target on OSX.
+   if ( $platform $= "macos" )
+      return;
+                  
+   // On the Xbox360 we know what will be enabled so don't do any trickery to
+   // disable MSAA
+   if ( $platform $= "xenon" )
+      return;
+      
+   // Enable the offscreen target so that AL will work
+   // with MSAA back buffers and for HDR rendering.   
+   AL_FormatToken.enable();
+}
+
+function onDeactivateAdvancedLM()
+{
+   // Disable the offscreen render target.
+   AL_FormatToken.disable();
+}
+
+function setAdvancedLighting()
+{
+   setLightManager( "Advanced Lighting" );   
+}
+

@@ -1,0 +1,30 @@
+<TorsionProject>
+<Name>New Project</Name>
+<WorkingDir/>
+<EntryScript>main.cs</EntryScript>
+<DebugHook>dbgSetParameters( #port#, "#password#", true );</DebugHook>
+<Mods>
+<Folder>core</Folder>
+<Folder>scripts</Folder>
+<Folder>art</Folder>
+<Folder>levels</Folder>
+<Folder>shaders</Folder>
+<Folder>tools</Folder>
+</Mods>
+<ScannerExts>cs; gui</ScannerExts>
+<Configs>
+<Config>
+<Name>Release</Name>
+<Executable>New Project.exe</Executable>
+<Arguments/>
+<HasExports>true</HasExports>
+<Precompile>true</Precompile>
+<InjectDebugger>true</InjectDebugger>
+<UseSetModPaths>false</UseSetModPaths>
+</Config>
+</Configs>
+<SearchURL/>
+<SearchProduct>UrbanSmokeTest</SearchProduct>
+<SearchVersion>HEAD</SearchVersion>
+<ExecModifiedScripts>true</ExecModifiedScripts>
+</TorsionProject>
