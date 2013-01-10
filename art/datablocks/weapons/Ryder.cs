@@ -137,12 +137,13 @@ datablock ShapeBaseImageData(RyderWeaponImage)
    firstPerson = false;
    useEyeNode = false;
    animateOnServer = false;
+   infiniteAmmo = true;
 
    // When firing from a point offset from the eye, muzzle correction
    // will adjust the muzzle vector to point to the eye LOS point.
    // Since this weapon doesn't actually fire from the muzzle point,
    // we need to turn this off.
-   correctMuzzleVector = true;
+   //correctMuzzleVector = true;
 
    // Add the WeaponImage namespace as a parent, WeaponImage namespace
    // provides some hooks into the inventory system.

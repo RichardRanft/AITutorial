@@ -188,7 +188,14 @@ function WeaponImage::onFire(%this, %obj, %slot)
       {
          // We'll need to "skew" this projectile a little bit.  We start by
          // getting the straight ahead aiming point of the gun
-         %vec = %obj.getMuzzleVector(%slot);
+         if (%obj.isMemberOfClass("AiPlayer") && isObject(%obj.target))
+         {
+            %vec = %obj.getVectorTo(%obj.target);
+            %vec = VectorAdd(%vec, "0 0 "@%obj.aimOffset);
+            %vec = VectorNormalize(%vec);
+         }
+         else
+            %vec = %obj.getMuzzleVector(%slot);
 
          // Then we'll create a spread matrix by randomly generating x, y, and z
          // points in a circle
@@ -204,7 +211,14 @@ function WeaponImage::onFire(%this, %obj, %slot)
       {
          // Weapon projectile doesn't have a spread factor so we fire it using
          // the straight ahead aiming point of the gun
-         %muzzleVector = %obj.getMuzzleVector(%slot);
+         if (%obj.isMemberOfClass("AiPlayer") && isObject(%obj.target))
+         {
+            %muzzleVector = %obj.getVectorTo(%obj.target);
+            %muzzleVector = VectorAdd(%muzzleVector, "0 0 "@%obj.aimOffset);
+            %muzzleVector = VectorNormalize(%muzzleVector);
+         }
+         else
+             %muzzleVector = %obj.getMuzzleVector(%slot);
       }
 
       // Add player's velocity

@@ -204,7 +204,7 @@ datablock ProjectileData( BulletProjectile )
    explosion           = BulletDirtExplosion;
    decal               = BulletHoleDecal;
 
-   muzzleVelocity      = 120;
+   muzzleVelocity      = 250;
    velInheritFactor    = 1;
 
    armingDelay         = 0;
@@ -318,7 +318,7 @@ datablock ShapeBaseImageData(LurkerWeaponImage)
    firstPerson = false;
    useEyeNode = false;
    animateOnServer = false;
-   eyeOffset = "0.0 0.6 -0.1";
+   infiniteAmmo = true;
 
    // When firing from a point offset from the eye, muzzle correction
    // will adjust the muzzle vector to point to the eye LOS point.
@@ -597,9 +597,10 @@ datablock ShapeBaseImageData(LurkerGrenadeLauncherImage)
    // Specify mount point & offset for 3rd person, and eye offset
    // for first person rendering.
    mountPoint = 0;
-   //firstPerson = false;
-   //useEyeNode = false;
-   animateOnServer = true;
+   firstPerson = false;
+   useEyeNode = false;
+   animateOnServer = false;
+   infiniteAmmo = true;
 
    // When firing from a point offset from the eye, muzzle correction
    // will adjust the muzzle vector to point to the eye LOS point.
@@ -618,7 +619,7 @@ datablock ShapeBaseImageData(LurkerGrenadeLauncherImage)
 
    projectile = GrenadeLauncherProjectile;
    projectileType = Projectile;
-   projectileSpread = "0.02";
+   projectileSpread = "0.007";
 
    // Weapon lights up while firing
    lightType = "WeaponFireLight";

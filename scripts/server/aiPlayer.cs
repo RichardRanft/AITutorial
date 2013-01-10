@@ -22,6 +22,9 @@
 //-----------------------------------------------------------------------------
 // Demo Pathed AIPlayer.
 //-----------------------------------------------------------------------------
+$AIPlayer::GrenadierRange = 40.0;
+$AIPlayer::GrenadeGravityModifier = 0.86;
+$AIPlayer::DefaultPriority = 1;
 
 function DemoPlayer::onReachDestination(%this,%obj)
 {
@@ -66,12 +69,14 @@ function DemoPlayer::onEndSequence(%this,%obj,%slot)
 
 function DemoPlayerData::fire(%this, %obj)
 {
-    if (%obj.target.getState() $= "dead")
+    %validTarget = isObject(%obj.target);
+    if (!%validTarget || %obj.target.getState() $= "dead")
+    {
+        %obj.nextTask();
         return;
+    }
 
-    %targetData = %this.target.getDataBlock();
-    %z = getWord(%targetData.boundingBox, 2) / 2;
-    %offset = "0 0" SPC %z;
+    %obj.aimOffset = 0;
 
     // Tell our AI object to fire its weapon
     %obj.setImageTrigger(0, 1);
@@ -84,7 +89,8 @@ function DemoPlayerData::fire(%this, %obj)
 
 function AssaultUnitData::fire(%this, %obj)
 {
-    if (%obj.target.getState() $= "dead")
+    %validTarget = isObject(%obj.target);
+    if (!%validTarget || %obj.target.getState() $= "dead")
     {
         %obj.aimAt(0);
         %obj.setImageTrigger(0, 0);
@@ -92,9 +98,7 @@ function AssaultUnitData::fire(%this, %obj)
         return;
     }
 
-    %targetData = %this.target.getDataBlock();
-    %z = getWord(%targetData.boundingBox, 2) / 2;
-    %offset = "0 0" SPC %z;
+    %obj.aimOffset = 0;
     %fireState = %obj.getImageTrigger(0);
 
     if (!%fireState)
@@ -106,7 +110,8 @@ function AssaultUnitData::fire(%this, %obj)
 
 function GrenadierUnitData::fire(%this, %obj)
 {
-    if (%obj.target.getState() $= "dead")
+    %validTarget = isObject(%obj.target);
+    if (!%validTarget || %obj.target.getState() $= "dead")
     {
         %obj.nextTask();
         return;
@@ -114,34 +119,31 @@ function GrenadierUnitData::fire(%this, %obj)
 
     // ok, here we need to calculate offset by figuring the angle that we need to aim
     // upwards to reach our target and move closer if we can't reach.
-    %targetData = %obj.target.getDataBlock();
-    %distToTarget = %obj.getTargetDistance(%obj.target);
-
-    if (%distToTarget > $AIPlayer::GrenadierRange)
+    %objWeapon = %obj.getMountedImage(0);
+    %velocity = %objWeapon.projectile.muzzleVelocity;
+    %range = %obj.getTargetDistance(%obj.target);
+    if (%range > $AIPlayer::GrenadierRange)
+        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, true, $AIPlayer::GrenadeGravityModifier);
+    else
+        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, false, $AIPlayer::GrenadeGravityModifier * 0.85);
+    if ( %offset == -1 )
     {
         %obj.schedule(32, pushTask, "closeOnTarget");
         %obj.schedule(64, pushTask, "fire" TAB true);
         return;
     }
 
-    %angleBoost = %distToTarget;
-    %z = (getWord(%targetData.boundingBox, 2) / 2) + %angleBoost;
-    %offset = "0 0" SPC %z;
-    %obj.setAimObject(%obj.target, %offset);
+    %obj.aimOffset = %offset;
 
     // Tell our AI object to fire its weapon
     %obj.setImageTrigger(0, 1);
     %obj.schedule(64, setImageTrigger, 0, 0);
-    if (%obj.target.getState() !$= "dead")
-        %obj.trigger = %obj.schedule(%obj.shootingDelay, fire, 1);
-    %obj.pushTask("checkTargetStatus");
+    %obj.trigger = %obj.schedule(%obj.shootingDelay, pushTask, "checkTargetStatus");
     %obj.nextTask();
 }
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
-$AIPlayer::GrenadierRange = 30.0;
-$AIPlayer::DefaultPriority = 1;
 
 function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 {
@@ -178,6 +180,33 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 // ----------------------------------------------------------------------------
 // Some handy getDistance/nearestTarget functions for the AI to use
 // ----------------------------------------------------------------------------
+function AIPlayer::GetBallisticAimPos(%this, %pos, %roundVel, %mortarAim, %gMod)  
+{  
+    %posFlat = %pos;
+    %thisPos = %this.getPosition();
+    %posFlat.z = %thisPos.z;
+    %x = VectorDist(%thisPos, %posFlat);  
+    %y = %pos.z - %thisPos.z;  
+    //error("X delta: " @ %x @ " -- Y delta: " @ %y);   
+
+    %g = 9.82 * %gMod;  
+    %r1 = mSqrt(mPow(%roundVel,4.0) - %g * (%g * (%x * %x) + ((%y / 4) * (%roundVel * %roundVel))));  
+
+    if (%r1 $= "-1.#IND") // If not a real number, it's not possible to hit %pos, return -1  
+        return -1;  
+
+    %a1 = ((%roundVel*%roundVel) - %r1) / (%g * %x);  
+    %a1 = mASin(%a1 / mSqrt((%a1 * %a1) + 1));  
+    %angleOfReach = mRadToDeg(%a1);  
+    if (%mortarAim)  
+        %angleOfReach = 90 - %angleOfReach;  
+    //error("Angle of reach is " @ %angleOfReach);  
+
+    %offsetHeight = mTan(mDegToRad(%angleOfReach)) * %x;  
+
+    //error(%this @ ": aim offset for gravity = " @ %offsetHeight);  
+    return %offsetHeight;
+}  
 
 function AIPlayer::getTargetDistance(%this, %target)
 {
@@ -207,7 +236,11 @@ function AIPlayer::getAngleTo(%this, %pos)
 
 // Return position vector to a position
 function AIPlayer::getVectorTo(%this, %pos)
-{ return VectorSub(%pos, %this.getPosition()); }
+{
+    if (getWordCount(%pos) < 2 && isObject(%pos))
+        %pos = %pos.getPosition();
+    return VectorSub(%pos, %this.getPosition());
+}
 
 function AIPlayer::getTargetDirection(%this, %target)
 {
@@ -253,7 +286,10 @@ function AIPlayer::closeOnTarget(%this)
 {
     if (isObject(%this.target))
     {
-        if (%this.getTargetDistance(%this.target) > $AIPlayer::GrenadierRange)
+        %weapon = %this.getMountedImage(0);
+        %velocity = %weapon.projectile.muzzleVelocity;
+        %offset = %this.getBallisticAimPos(%this.target.getPosition(), %velocity, true, 1.0);
+        if ( %offset == -1 )
         {
             %this.setMoveDestination(%this.target.getPosition());
             %this.schedule(300, pushTask, "closeOnTarget");
@@ -416,24 +452,12 @@ function AIPlayer::fire(%this, %bool)
     if (!isObject(%this.target))
         %bool = false;
 
+    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
     %datablock = %this.getDatablock();
-    %type = %datablock.getName();
     if (%bool)
     {
-        switch$(%type)
-        {
-            case "DemoPlayerData":
-                cancel(%this.trigger);
-                %datablock.fire(%this);
-
-            case "AssaultUnitData":
-                cancel(%this.trigger);
-                %datablock.fire(%this);
-
-            case "GrenadierUnitData":
-                cancel(%this.trigger);
-                %datablock.fire(%this);
-        }
+        if (%canFire)
+            %datablock.fire(%this);
     }
     else
     {
@@ -447,8 +471,13 @@ function AIPlayer::fire(%this, %bool)
 
 function AIPlayer::aimAt(%this, %object)
 {
-    %this.target = %object;
-    %this.setAimObject(%object, %offset);
+    if (isObject(%object))
+    {
+        %this.target = %object;
+        %datablock = %object.getDatablock();
+        %offset = "0 0 "@%datablock.boundingBox.z / 2;
+        %this.setAimObject(%object, %offset);
+    }
     %this.nextTask();
 }
 
@@ -456,7 +485,7 @@ function AIPlayer::attack(%this, %target)
 {
     %this.target = %target;
     %this.pushTask("aimAt" TAB %target);
-    %this.pushTask("fire" TAB true);
+    %this.schedule(128, pushTask, "fire" TAB true);
 }
 
 function AIPlayer::animate(%this,%seq)
@@ -566,6 +595,7 @@ function AIPlayer::getNearestTarget(%this, %radius)
 
 function AIPlayer::think(%this)
 {
+    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
     if (!isObject(%this.target))
     {
         %target = %this.getNearestTarget(100.0);
@@ -578,7 +608,10 @@ function AIPlayer::think(%this)
     if (!isObject(%this.target))
         %this.target = %this.findTargetInMissionGroup(25.0);
     if (isObject(%this.target) && %this.target.getState() !$= "dead")
-        %this.pushTask("attack" TAB %this.target);
+    {
+        if (%canFire)
+            %this.pushTask("attack" TAB %this.target);
+    }
     if (isObject(%this.target) && %this.target.getState() $= "dead")
         %this.pushTask("fire" TAB false);
 }
@@ -594,21 +627,31 @@ if (!isObject(AIManager))
 
 function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
 {
+    MissionCleanup.add(%this);
     %this.priorityRadius = (%priorityRadius !$= "" ? %priorityRadius : $AIManager::PriorityRadius);
     %this.sleepRadius = (%sleepRadius !$= "" ? %sleepRadius : $AIManager::SleepRadius);
     %this.priorityTime = (%priorityTime !$= "" ? %priorityTime : $AIManager::PriorityTime);
     %this.idleTime = (%idleTime !$= "" ? %idleTime : $AIManager::IdleTime);
 
     if (!isObject(%this.priorityGroup))
+    {
         %this.priorityGroup = new SimSet();
+        MissionCleanup.add(%this.priorityGroup);
+    }
     else
         %this.priorityGroup.clear();
     if (!isObject(%this.idleGroup))
+    {
         %this.idleGroup = new SimSet();
+        MissionCleanup.add(%this.idleGroup);
+    }
     else
         %this.idleGroup.clear();
     if (!isObject(%this.sleepGroup))
+    {
         %this.sleepGroup = new SimSet();
+        MissionCleanup.add(%this.sleepGroup);
+    }
     else
         %this.sleepGroup.clear();
 
@@ -629,6 +672,12 @@ function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority,
 
 function AIManager::think(%this)
 {
+    // The purpose here is to reduce overhead from AI for units that are
+    // farther "from the action."  So I'm using sorting units from one 
+    // list to another based on the unit's distance from the current 
+    // player's camera.  This works for a single-player game but needs 
+    // to be adjusted for multiplayer, since any unit near any player's 
+    // camera needs to be "thinking" at the correct priority.
     if (isObject(%this.client))
     {
         %clientCamLoc = LocalClientConnection.camera.getPosition();
