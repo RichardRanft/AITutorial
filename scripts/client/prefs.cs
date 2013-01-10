@@ -7,6 +7,7 @@ $pref::enablePostEffects = "1";
 $pref::GroundCover::densityScale = "1";
 $pref::hasClientTicked = "1";
 $pref::hasServerTicked = "1";
+$pref::HostMultiPlayer = "1";
 $pref::HudMessageLogSize = 40;
 $pref::imposter::canShadow = "1";
 $pref::Input::JoystickEnabled = "0";

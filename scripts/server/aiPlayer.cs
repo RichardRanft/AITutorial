@@ -617,6 +617,8 @@ function AIPlayer::think(%this)
 }
 
 //-----------------------------------------------------------------------------
+// AI Manager system - coordinates groups of AI units
+//-----------------------------------------------------------------------------
 $AIManager::PriorityTime = 200;
 $AIManager::IdleTime = 1000;
 $AIManager::PriorityRadius = 75;
@@ -674,13 +676,11 @@ function AIManager::think(%this)
 {
     // The purpose here is to reduce overhead from AI for units that are
     // farther "from the action."  So I'm using sorting units from one 
-    // list to another based on the unit's distance from the current 
-    // player's camera.  This works for a single-player game but needs 
-    // to be adjusted for multiplayer, since any unit near any player's 
+    // list to another based on the unit's distance from the nearest 
+    // player's camera, since any unit near any player's 
     // camera needs to be "thinking" at the correct priority.
     if (isObject(%this.client))
     {
-        %clientCamLoc = LocalClientConnection.camera.getPosition();
         %hCount = %this.priorityGroup.getCount();
         %index = 0;
         while (%index < %hCount)
@@ -688,7 +688,11 @@ function AIManager::think(%this)
             %unit = %this.priorityGroup.getObject(%index);
             if (!isObject(%unit))
                 %this.priorityGroup.remove(%unit);
-            %range = VectorDist( %clientCamLoc, %unit.getPosition() );
+            %unitPosition = %unit.getPosition();
+            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+            if (%clientCamLoc $= "")
+                continue;
+            %range = VectorDist( %clientCamLoc, %unitPosition );
             if (%this.priorityRadius < %range)
             {
                 %this.priorityGroup.remove(%unit);
@@ -705,7 +709,11 @@ function AIManager::think(%this)
             %unit = %this.idleGroup.getObject(%index);
             if (!isObject(%unit))
                 %this.idleGroup.remove(%unit);
-            %range = VectorDist( %clientCamLoc, %unit.getPosition() );
+            %unitPosition = %unit.getPosition();
+            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+            if (%clientCamLoc $= "")
+                continue;
+            %range = VectorDist( %clientCamLoc, %unitPosition );
             if (%this.sleepRadius < %range)
             {
                 %this.idleGroup.remove(%unit);
@@ -729,7 +737,11 @@ function AIManager::think(%this)
             %unit = %this.sleepGroup.getObject(%index);
             if (!isObject(%unit))
                 %this.sleepGroup.remove(%unit);
-            %range = VectorDist( %clientCamLoc, %unit.getPosition() );
+            %unitPosition = %unit.getPosition();
+            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+            if (%clientCamLoc $= "")
+                continue;
+            %range = VectorDist( %clientCamLoc, %unitPosition );
             if (%this.sleepRadius > %range)
             {
                 %this.sleepGroup.remove(%unit);
@@ -741,6 +753,28 @@ function AIManager::think(%this)
         }
     }
     %this.schedule(500, "think");
+}
+
+function AIManager::findNearestClientPosition(%this, %position)
+{
+    %clientCount = ClientGroup.getCount();
+    %dist = 125000; // arbitrarily large starting distance
+    %pos = "";
+    for (%i = 0; %i < %clientCount; %i++)
+    {
+        %client = ClientGroup.getObject(%i);
+        if (isObject(%client.camera))
+        {
+            %clientPos = %client.camera.getPosition();
+            %tempDist = VectorDist(%position, %clientPos);
+            if (%dist > %tempDist)
+            {
+                %dist = %tempDist;
+                %pos = %clientPos;
+            }
+        }
+    }
+    return %pos;
 }
 
 function AIManager::priorityThink(%this)
