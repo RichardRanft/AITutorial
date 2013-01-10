@@ -425,21 +425,8 @@ function serverCmdtoggleMultiSelect(%client, %flag)
 
 function attack(%unit, %target)
 {
-    //if (%target.getState() $= "dead")
-        //return;
-    //if (%unit.getDatablock().mainWeapon.image !$= "")
-        //%unit.mountImage(%unit.getDatablock().mainWeapon.image, 0);
-    //else
-        //%unit.mountImage(Lurker, 0);
-//
-    //%targetData = %target.getDataBlock();
-    //%z = getWord(%targetData.boundingBox, 2) / 2;
-    //%offset = "0 0" SPC %z;
-    //%unit.setAimObject(%target, %offset);
     %unit.target = %target;
     %unit.attack(%target);
-    // Tell our AI object to fire its weapon
-    //%unit.setImageTrigger(0, 1);
 }
 
 function multiSelect(%target, %team)

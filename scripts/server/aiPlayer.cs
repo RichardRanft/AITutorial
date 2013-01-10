@@ -22,7 +22,6 @@
 //-----------------------------------------------------------------------------
 // Demo Pathed AIPlayer.
 //-----------------------------------------------------------------------------
-$AIPlayer::GrenadierRange = 30.0;
 
 function DemoPlayer::onReachDestination(%this,%obj)
 {
@@ -78,7 +77,7 @@ function DemoPlayerData::fire(%this, %obj)
     %obj.setImageTrigger(0, 1);
     %obj.schedule(64, setImageTrigger, 0, 0);
     if (%obj.target.getState() !$= "dead")
-        %obj.trigger = %this.schedule(%obj.shootingDelay, fire, 1);
+        %obj.trigger = %this.schedule(%obj.shootingDelay, fire, %obj);
     %obj.pushTask("checkTargetStatus");
     %obj.nextTask();
 }
@@ -141,6 +140,8 @@ function GrenadierUnitData::fire(%this, %obj)
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
+$AIPlayer::GrenadierRange = 30.0;
+$AIPlayer::DefaultPriority = 1;
 
 function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 {
@@ -149,10 +150,8 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     {
         dataBlock = (%datablock !$= "" ? %datablock : DemoPlayer);
     };
-    if (%priority !$= "")
-        %player.priority = %priority;
-    else
-        %player.priority = 1;
+    %player.priority = (%priority !$= "" ? %priority : $AIPlayer::DefaultPriority);
+
     %player.shootingDelay = %datablock.shootingDelay;
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
@@ -423,7 +422,7 @@ function AIPlayer::fire(%this, %bool)
     {
         switch$(%type)
         {
-            case "DefaultPlayerData":
+            case "DemoPlayerData":
                 cancel(%this.trigger);
                 %datablock.fire(%this);
 
@@ -577,7 +576,7 @@ function AIPlayer::think(%this)
         }
     }
     if (!isObject(%this.target))
-        %this.target = %this.findTargetInMissionGroup(30.0);
+        %this.target = %this.findTargetInMissionGroup(25.0);
     if (isObject(%this.target) && %this.target.getState() !$= "dead")
         %this.pushTask("attack" TAB %this.target);
     if (isObject(%this.target) && %this.target.getState() $= "dead")
@@ -585,14 +584,20 @@ function AIPlayer::think(%this)
 }
 
 //-----------------------------------------------------------------------------
+$AIManager::PriorityTime = 200;
+$AIManager::IdleTime = 1000;
+$AIManager::PriorityRadius = 75;
+$AIManager::SleepRadius = 250;
+
 if (!isObject(AIManager))
     new ScriptObject(AIManager);
 
-function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius)
+function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
 {
-    %this.priorityRadius = %priorityRadius;
-    %this.priorityTime = %priorityTime;
-    %this.idleTime = %idleTime;
+    %this.priorityRadius = (%priorityRadius !$= "" ? %priorityRadius : $AIManager::PriorityRadius);
+    %this.sleepRadius = (%sleepRadius !$= "" ? %sleepRadius : $AIManager::SleepRadius);
+    %this.priorityTime = (%priorityTime !$= "" ? %priorityTime : $AIManager::PriorityTime);
+    %this.idleTime = (%idleTime !$= "" ? %idleTime : $AIManager::IdleTime);
 
     if (!isObject(%this.priorityGroup))
         %this.priorityGroup = new SimSet();
@@ -602,6 +607,10 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius)
         %this.idleGroup = new SimSet();
     else
         %this.idleGroup.clear();
+    if (!isObject(%this.sleepGroup))
+        %this.sleepGroup = new SimSet();
+    else
+        %this.sleepGroup.clear();
 
     %this.think();
     %this.priorityThink();
@@ -648,12 +657,36 @@ function AIManager::think(%this)
             if (!isObject(%unit))
                 %this.idleGroup.remove(%unit);
             %range = VectorDist( %clientCamLoc, %unit.getPosition() );
-            if (%this.priorityRadius > %range)
+            if (%this.sleepRadius < %range)
+            {
+                %this.idleGroup.remove(%unit);
+                %this.sleepGroup.add(%unit);
+                %hCount--;
+                echo(" @@@ Moved " @ %unit @ " to sleep group : " @ %range);
+            }
+            if (%this.priorityRadius > %range && %unit.priority > 0)
             {
                 %this.idleGroup.remove(%unit);
                 %this.priorityGroup.add(%unit);
                 %hCount--;
                 echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
+            }
+            %index++;
+        }
+        %hCount = %this.sleepGroup.getCount();
+        %index = 0;
+        while (%index < %hCount)
+        {
+            %unit = %this.sleepGroup.getObject(%index);
+            if (!isObject(%unit))
+                %this.sleepGroup.remove(%unit);
+            %range = VectorDist( %clientCamLoc, %unit.getPosition() );
+            if (%this.sleepRadius > %range)
+            {
+                %this.sleepGroup.remove(%unit);
+                %this.idleGroup.add(%unit);
+                %hCount--;
+                echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
             }
             %index++;
         }
