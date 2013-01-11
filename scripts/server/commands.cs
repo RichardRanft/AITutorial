@@ -118,8 +118,8 @@ function serverCmdorbitCam(%client)
 
 function serverCmdoverheadCam(%client)
 {
-    %client.camera.position = VectorAdd(%client.player.position, "0 0 30");
-    %client.camera.lookAt(%client.player.position);
+    //%client.camera.position = VectorAdd(%client.player.position, "0 0 30");
+    //%client.camera.lookAt(%client.player.position);
     %client.camera.controlMode = "Overhead"; 
 }
 

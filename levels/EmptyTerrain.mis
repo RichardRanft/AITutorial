@@ -80,28 +80,78 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
          tile = "0";
    };
-   new SimGroup(PlayerDropPoints) {
+   new SimGroup(PlayerSpawnPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
          enabled = "1";
 
-      new SpawnSphere() {
-         spawnScript = " %client.camera.position = Cam1.position;\n %client.camera.rotation = Cam1.rotation;\n$SpawnObject.player.team = 1;";
+      new SpawnSphere(Player4Spawn) {
+         spawnClass = "Camera";
+         spawnDatablock = "Observer";
          autoSpawn = "0";
+         spawnTransform = "0";
          radius = "1";
          sphereWeight = "1";
-         indoorWeight = "1";
-         outdoorWeight = "1";
+         indoorWeight = "100";
+         outdoorWeight = "100";
          isAIControlled = "0";
          dataBlock = "SpawnSphereMarker";
-         position = "23.7825 -9.11892 241.04";
-         rotation = "1 0 0 0";
+         position = "348.682 -231.267 274.176";
+         rotation = "0.0911748 0.0439972 -0.994862 51.7514";
          scale = "1 1 1";
          canSave = "1";
          canSaveDynamicFields = "1";
-            enabled = "1";
-            homingCount = "0";
-            lockCount = "0";
+      };
+      new SpawnSphere(Player3Spawn) {
+         spawnClass = "Camera";
+         spawnDatablock = "Observer";
+         autoSpawn = "0";
+         spawnTransform = "0";
+         radius = "1";
+         sphereWeight = "1";
+         indoorWeight = "100";
+         outdoorWeight = "100";
+         isAIControlled = "0";
+         dataBlock = "SpawnSphereMarker";
+         position = "-147.328 -338.12 274.176";
+         rotation = "0.198536 -0.0595819 0.978281 34.1088";
+         scale = "1 1 1";
+         canSave = "1";
+         canSaveDynamicFields = "1";
+      };
+      new SpawnSphere(Player2Spawn) {
+         spawnClass = "Camera";
+         spawnDatablock = "Observer";
+         autoSpawn = "0";
+         spawnTransform = "0";
+         radius = "1";
+         sphereWeight = "1";
+         indoorWeight = "100";
+         outdoorWeight = "100";
+         isAIControlled = "0";
+         dataBlock = "SpawnSphereMarker";
+         position = "-386.89 -107.693 274.176";
+         rotation = "0.0698231 -0.0688989 0.995177 89.5135";
+         scale = "1 1 1";
+         canSave = "1";
+         canSaveDynamicFields = "1";
+      };
+      new SpawnSphere(Player1Spawn) {
+         spawnClass = "Camera";
+         spawnDatablock = "Observer";
+         autoSpawn = "0";
+         spawnTransform = "0";
+         radius = "1";
+         sphereWeight = "1";
+         indoorWeight = "100";
+         outdoorWeight = "100";
+         isAIControlled = "0";
+         dataBlock = "SpawnSphereMarker";
+         position = "-33.9699 137.25 274.176";
+         rotation = "0.0450487 -0.147337 0.98806 146.381";
+         scale = "1 1 1";
+         canSave = "1";
+         canSaveDynamicFields = "1";
       };
    };
    new SimGroup(Buildings) {
@@ -130,6 +180,10 @@ new SimGroup(MissionGroup) {
       canSaveDynamicFields = "1";
    };
    new SimGroup(Bookmarks) {
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new SimGroup(ObserverDropPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
    };
