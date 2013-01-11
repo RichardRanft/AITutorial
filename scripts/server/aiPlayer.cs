@@ -970,8 +970,13 @@ function AIManager::think(%this)
         while (%index < %hCount)
         {
             %unit = %this.priorityGroup.getObject(%index);
-            if (!isObject(%unit))
+            if (!isObject(%unit) || %unit.getState() $= "dead")
+            {
                 %this.priorityGroup.remove(%unit);
+                %hCount--;
+                %index--;
+                continue;
+            }
             %unitPosition = %unit.getPosition();
             %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
             if (%clientCamLoc $= "")
@@ -991,8 +996,13 @@ function AIManager::think(%this)
         while (%index < %hCount)
         {
             %unit = %this.idleGroup.getObject(%index);
-            if (!isObject(%unit))
+            if (!isObject(%unit) || %unit.getState() $= "dead")
+            {
                 %this.idleGroup.remove(%unit);
+                %hCount--;
+                %index--;
+                continue;
+            }
             %unitPosition = %unit.getPosition();
             %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
             if (%clientCamLoc $= "")
@@ -1019,8 +1029,13 @@ function AIManager::think(%this)
         while (%index < %hCount)
         {
             %unit = %this.sleepGroup.getObject(%index);
-            if (!isObject(%unit))
+            if (!isObject(%unit) || %unit.getState() $= "dead")
+            {
                 %this.sleepGroup.remove(%unit);
+                %hCount--;
+                %index--;
+                continue;
+            }
             %unitPosition = %unit.getPosition();
             %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
             if (%clientCamLoc $= "")
