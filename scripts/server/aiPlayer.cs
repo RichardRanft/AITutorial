@@ -231,11 +231,20 @@ function AIPlayer::getAngle(%vec1, %vec2)
   return %degangle;
 }
 
-// return angle between eye vector and %pos
+/// <summary>
+/// This function calculates the angle between eye vector and %pos
+/// <summary>
+/// <param name="pos">The target position.</param>
+/// <return>Returns a scalar angle in degrees.</return>
 function AIPlayer::getAngleTo(%this, %pos)
 { return AIPlayer::getAngle(%this.getVectorTo(%pos), %this.getEyeVector()); }
 
 // Return position vector to a position
+/// <summary>
+/// This function calculates the vector to %pos from eye point
+/// <summary>
+/// <param name="pos">The target position.</param>
+/// <return>Returns a 3D vector from eye pos to target pos (not normalized).</return>
 function AIPlayer::getVectorTo(%this, %pos)
 {
     if (getWordCount(%pos) < 2 && isObject(%pos))
@@ -243,6 +252,11 @@ function AIPlayer::getVectorTo(%this, %pos)
     return VectorSub(%pos, %this.getPosition());
 }
 
+/// <summary>
+/// This function gets the direction from the unit to the target.
+/// <summary>
+/// <param name="target">The target object.</param>
+/// <return>Returns a scalar angle in degrees.</return>
 function AIPlayer::getTargetDirection(%this, %target)
 {
     if (!%target)
@@ -254,6 +268,13 @@ function AIPlayer::getTargetDirection(%this, %target)
     return %angle;
 }
 
+/// <summary>
+/// This function determines if the target is within the unit's sight cone.
+/// <summary>
+/// <param name="objPos">The unit's position.</param>
+/// <param name="targetPos">The target's position.</param>
+/// <param name="angle">The number of degrees off of forward that the cone extends (1/2 view width).</param>
+/// <return>Returns true if the target is in "sight" or false if not.</return>
 function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle)
 {
     if ( %angle < 60 )
@@ -283,45 +304,7 @@ function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle)
     return false;
 }
 
-function AIPlayer::closeOnTarget(%this)
-{
-    if (isObject(%this.target))
-    {
-        %weapon = %this.getMountedImage(0);
-        %velocity = %weapon.projectile.muzzleVelocity;
-        %offset = %this.getBallisticAimPos(%this.target.getPosition(), %velocity, true, 1.0);
-        if ( %offset == -1 )
-        {
-            %this.setMoveDestination(%this.target.getPosition());
-            %this.schedule(300, pushTask, "closeOnTarget");
-        }
-        else
-            %this.setMoveDestination(%this.getPosition());
-    }
-    %this.nextTask();
-}
-
-function AIPlayer::checkTargetStatus(%this)
-{
-    if (isObject(%this.target))
-    {
-        if (%this.target.getState() $= "dead")
-            %this.pushTask("clearTarget");
-        else
-            %this.schedule(%this.shootingDelay, pushTask, checkTargetStatus);
-    }
-    %this.nextTask();
-}
-
-function AIPlayer::clearTarget(%this)
-{
-    %this.setAimObject(0);
-    %this.target = "";
-    %this.schedule(32, "setImageTrigger", 0, 0);
-    %this.nextTask();
-}
-
-function AIPlayer::followPath(%this,%path,%node)
+function AIPlayer::followPath(%this, %path, %node)
 {
    // Start the player following a path
    %this.stopThread(0);
@@ -368,167 +351,6 @@ function AIPlayer::moveToNode(%this,%index)
    %node = %this.path.getObject(%index);
    %this.setMoveDestination(%node.getTransform(), %index == %this.targetNode);
 }
-
-//-----------------------------------------------------------------------------
-//  Task system
-//-----------------------------------------------------------------------------
-// The system needs a prioritization method to "float" higher-priority tasks 
-// toward the front of the list.
-
-/// <summary>
-/// This function creates a task for the AI unit to carry out.  The <method>
-/// parameter is the name of the method to call when carrying out the task plus
-/// any method parameters in a TAB separated list.
-///
-/// For example:
-/// %unit.pushTask("method1"); // calls a method with no parameters
-/// %unit.pushTask("method2" TAB true); // calls a method and a parameter
-/// </summary>
-/// <param name="method">The unit method to call, plus method parameters in a TAB separated string list.</param>
-function AIPlayer::pushTask(%this, %method)
-{
-    if (!isObject(%this.taskList))
-        %this.taskList = new SimSet();
-    %task = new ScriptObject();
-    %task.method = %method;
-    %this.taskList.add(%task);
-    %this.executeTask();
-}
-
-/// <summary>
-/// This function clears the unit's task list.
-/// </summary>
-function AIPlayer::clearTasks(%this)
-{
-    if (isObject(%this.taskList))
-        %this.taskList.clear();
-    else
-        %this.taskList = new SimSet();
-}
-
-/// <summary>
-/// This function begins execution of the next task in the unit's list.
-/// </summary>
-function AIPlayer::nextTask(%this)
-{
-    %this.executeTask();
-}
-
-/// <summary>
-/// This function gets the next task in the unit's list and parses out the 
-/// method and parameters for the task method, then removes the task from 
-/// the list and calls the method.
-/// </summary>
-function AIPlayer::executeTask(%this)
-{
-    %taskCount = %this.taskList.getCount();
-    if (%taskCount > 0)
-    {
-        %task = %this.taskList.getObject(0);
-        %count = getFieldCount(%task.method);
-        %taskMethod = %task.method;
-        %this.taskList.remove(%task);
-        %task.delete();
-        if(%count == 1)
-            eval(%this.getId() @"."@ %taskMethod @"();");
-        else
-        {
-            %method = getField(%taskMethod, 0);
-            for (%i = 1; %i < %count; %i++)
-            {
-                if (%i == 1)
-                    %data = %data @ getField(%taskMethod, %i);
-                else
-                    %data = %data @ ", " @ getField(%taskMethod, %i);
-            }
-            %data = trim(%data);
-            eval(%this.getId() @ "." @ %method @ "(" @ %data @ ");");
-        }
-    }
-}
-
-//-----------------------------------------------------------------------------
-//  Goal system
-//-----------------------------------------------------------------------------
-// This system should handle more high-level goals such as get repairs or find
-// ammo that contain task lists to accomplish the goal.
-
-//-----------------------------------------------------------------------------
-
-function AIPlayer::singleShot(%this)
-{
-    // The shooting delay is used to pulse the trigger
-    %this.setImageTrigger(0, true);
-    %this.schedule(64, setImageTrigger, 0, false);
-
-    if (%this.target !$= "" && isObject(%this.target) && %this.target.getState() !$= "dead")
-        %this.trigger = %this.schedule(%this.shootingDelay, singleShot);
-}
-
-//-----------------------------------------------------------------------------
-
-function AIPlayer::wait(%this, %time)
-{
-   %this.schedule(%time * 1000, "nextTask");
-}
-
-function AIPlayer::done(%this,%time)
-{
-   %this.schedule(0, "delete");
-}
-
-function AIPlayer::fire(%this, %bool)
-{
-    if (!isObject(%this.target))
-        %bool = false;
-
-    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
-    %datablock = %this.getDatablock();
-    if (%bool)
-    {
-        if (%canFire)
-            %datablock.fire(%this);
-    }
-    else
-    {
-        %fireState = %this.getImageTrigger(0);
-        if (%fireState)
-            %this.setImageTrigger(0, 0);
-        cancel(%this.trigger);
-        %this.pushTask("clearTarget");
-    }
-    %this.nextTask();
-}
-
-function AIPlayer::aimAt(%this, %object)
-{
-    if (isObject(%object))
-    {
-        %this.target = %object;
-        %datablock = %object.getDatablock();
-        %offset = "0 0 "@%datablock.boundingBox.z / 2;
-        %this.setAimObject(%object, %offset);
-    }
-    %this.nextTask();
-}
-
-function AIPlayer::attack(%this, %target)
-{
-    %this.target = %target;
-    %this.pushTask("aimAt" TAB %target);
-    %this.schedule(128, pushTask, "fire" TAB true);
-}
-
-function AIPlayer::animate(%this,%seq)
-{
-   //%this.stopThread(0);
-   //%this.playThread(0,%seq);
-   %this.setActionThread(%seq);
-}
-
-// ----------------------------------------------------------------------------
-// Some handy getDistance/nearestTarget functions for the AI to use
-// ----------------------------------------------------------------------------
 
 function AIPlayer::getTargetDistance(%this, %target)
 {
@@ -624,12 +446,225 @@ function AIPlayer::getNearestTarget(%this, %radius)
     return %nearestTarget;
 }
 
+function AIPlayer::done(%this,%time)
+{
+   %this.schedule(0, "delete");
+}
+
+function AIPlayer::attack(%this, %target)
+{
+    %this.target = %target;
+    %this.pushTask("aimAt" TAB %target);
+    %this.schedule(128, pushTask, "fire" TAB true);
+}
+
+function AIPlayer::animate(%this,%seq)
+{
+   %this.setActionThread(%seq);
+}
+
+//-----------------------------------------------------------------------------
+//  Task system
+//-----------------------------------------------------------------------------
+// The system needs a prioritization method to "float" higher-priority tasks 
+// toward the front of the list.
+
+/// <summary>
+/// This function creates a task for the AI unit to carry out.  The <method>
+/// parameter is the name of the method to call when carrying out the task plus
+/// any method parameters in a TAB separated list.
+///
+/// For example:
+/// %unit.pushTask("method1"); // calls a method with no parameters
+/// %unit.pushTask("method2" TAB true); // calls a method and a parameter
+/// </summary>
+/// <param name="method">The unit method to call, plus method parameters in a TAB separated string list.</param>
+function AIPlayer::pushTask(%this, %method)
+{
+    if (!isObject(%this.taskList))
+        %this.taskList = new SimSet();
+    %task = new ScriptObject();
+    %task.method = %method;
+    %this.taskList.add(%task);
+    %this.executeTask();
+}
+
+/// <summary>
+/// This function clears the unit's task list.
+/// </summary>
+function AIPlayer::clearTasks(%this)
+{
+    if (isObject(%this.taskList))
+        %this.taskList.clear();
+    else
+        %this.taskList = new SimSet();
+}
+
+/// <summary>
+/// This function begins execution of the next task in the unit's list.
+/// </summary>
+function AIPlayer::nextTask(%this)
+{
+    %this.executeTask();
+}
+
+/// <summary>
+/// This function gets the next task in the unit's list and parses out the 
+/// method and parameters for the task method, then removes the task from 
+/// the list and calls the method.
+/// </summary>
+function AIPlayer::executeTask(%this)
+{
+    %taskCount = %this.taskList.getCount();
+    if (%taskCount > 0)
+    {
+        %task = %this.taskList.getObject(0);
+        %count = getFieldCount(%task.method);
+        %taskMethod = %task.method;
+        %this.taskList.remove(%task);
+        %task.delete();
+        if(%count == 1)
+            eval(%this.getId() @"."@ %taskMethod @"();");
+        else
+        {
+            %method = getField(%taskMethod, 0);
+            for (%i = 1; %i < %count; %i++)
+            {
+                if (%i == 1)
+                    %data = %data @ getField(%taskMethod, %i);
+                else
+                    %data = %data @ ", " @ getField(%taskMethod, %i);
+            }
+            %data = trim(%data);
+            eval(%this.getId() @ "." @ %method @ "(" @ %data @ ");");
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+//  Tasks
+//-----------------------------------------------------------------------------
+// Task methods should end in %this.nextTask()
+
+/// <summary>
+/// This function causes the AI to attempt to move toward its target until it's
+/// within weapon range of the target.  Used only by the grenadier at the moment, 
+/// but this should be revised to be more general.
+/// <summary>
+function AIPlayer::closeOnTarget(%this)
+{
+    if (isObject(%this.target))
+    {
+        %weapon = %this.getMountedImage(0);
+        %velocity = %weapon.projectile.muzzleVelocity;
+        %offset = %this.getBallisticAimPos(%this.target.getPosition(), %velocity, true, 1.0);
+        if ( %offset == -1 )
+        {
+            %this.setMoveDestination(%this.target.getPosition());
+            %this.schedule(300, pushTask, "closeOnTarget");
+        }
+        else
+            %this.setMoveDestination(%this.getPosition());
+    }
+    %this.nextTask();
+}
+
+/// <summary>
+/// This function checks to see if the current target is dead.  If it is, the unit
+/// clears its current target, otherwise it reschedules to check again.
+/// <summary>
+function AIPlayer::checkTargetStatus(%this)
+{
+    if (isObject(%this.target))
+    {
+        if (%this.target.getState() $= "dead")
+            %this.pushTask("clearTarget");
+        else
+            %this.schedule(%this.shootingDelay, "pushTask", "checkTargetStatus");
+    }
+    %this.nextTask();
+}
+
+/// <summary>
+/// This function clears the unit's current target.
+/// <summary>
+function AIPlayer::clearTarget(%this)
+{
+    %this.setAimObject(0);
+    %this.target = "";
+    %this.schedule(32, "setImageTrigger", 0, 0);
+    %this.nextTask();
+}
+
+
+function AIPlayer::singleShot(%this)
+{
+    // The shooting delay is used to pulse the trigger
+    %this.setImageTrigger(0, true);
+    %this.schedule(64, setImageTrigger, 0, false);
+
+    if (%this.target !$= "" && isObject(%this.target) && %this.target.getState() !$= "dead")
+        %this.trigger = %this.schedule(%this.shootingDelay, singleShot);
+}
+
+function AIPlayer::wait(%this, %time)
+{
+   %this.schedule(%time * 1000, "nextTask");
+}
+
+function AIPlayer::fire(%this, %bool)
+{
+    if (!isObject(%this.target))
+        %bool = false;
+
+    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
+    %datablock = %this.getDatablock();
+    if (%bool)
+    {
+        if (%canFire)
+            %datablock.fire(%this);
+    }
+    else
+    {
+        %fireState = %this.getImageTrigger(0);
+        if (%fireState)
+            %this.setImageTrigger(0, 0);
+        cancel(%this.trigger);
+        %this.pushTask("clearTarget");
+    }
+    %this.nextTask();
+}
+
+function AIPlayer::aimAt(%this, %object)
+{
+    if (isObject(%object))
+    {
+        %this.target = %object;
+        %datablock = %object.getDatablock();
+        %offset = "0 0 "@%datablock.boundingBox.z / 2;
+        %this.setAimObject(%object, %offset);
+    }
+    %this.nextTask();
+}
+
+//-----------------------------------------------------------------------------
+//  Goal system
+//-----------------------------------------------------------------------------
+// This system should handle more high-level goals such as get repairs or find
+// ammo that contain task lists to accomplish the goal.
+
+//-----------------------------------------------------------------------------
+
 /// <summary>
 /// This function handles the unit's thinking.  Simple minds and all that....
 /// </summary>
 function AIPlayer::think(%this)
 {
     %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
+    // bail - can't attack anything right now anyway, why bother with the search?
+    if (!%canFire)
+        return;
+
     if (!isObject(%this.target))
     {
         %target = %this.getNearestTarget(100.0);
@@ -641,13 +676,13 @@ function AIPlayer::think(%this)
     }
     if (!isObject(%this.target))
         %this.target = %this.findTargetInMissionGroup(25.0);
+
     if (isObject(%this.target) && %this.target.getState() !$= "dead")
     {
         if (%canFire)
-        {
             %this.pushTask("attack" TAB %this.target);
-            return;
-        }
+
+        return;
     }
     if (isObject(%this.target) && %this.target.getState() $= "dead")
     {

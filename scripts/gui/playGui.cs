@@ -139,17 +139,17 @@ function PlayGui::onMouseDown(%this, %pos, %start, %ray)
 function orcBurrowButton::onClick(%this)
 {
     PlayGui.placingBuilding = true;
-    PlayGui.buildingType = 1;
+    PlayGui.buildingType = %this.buildingType;
 }
 
 function orcBurrowButton2::onClick(%this)
 {
     PlayGui.placingBuilding = true;
-    PlayGui.buildingType = 2;
+    PlayGui.buildingType = %this.buildingType;
 }
 
 function orcBurrowButton3::onClick(%this)
 {
     PlayGui.placingBuilding = true;
-    PlayGui.buildingType = 3;
+    PlayGui.buildingType = %this.buildingType;
 }

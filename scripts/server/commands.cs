@@ -373,16 +373,7 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
         }
         
         %spawnName = "team"@%client.team@"Spawn" @ %obj.getId();
-        %datablock = $Game::DefaultPlayerDataBlock;
-        switch(%type)
-        {
-            case 1:
-                %datablock = "DemoPlayerData";
-            case 2:
-                %datablock = "AssaultUnitData";
-            case 3:
-                %datablock = "GrenadierUnitData";
-        }
+        %datablock = (%type !$= "" ? %type : $Game::DefaultPlayerDataBlock);
         %point = new SpawnSphere(%spawnName)
         {
             radius = "1";

@@ -353,7 +353,8 @@
       hovertime = "1000";
       isContainer = "0";
       canSave = "1";
-      canSaveDynamicFields = "0";
+      canSaveDynamicFields = "1";
+      buildingType = "DemoPlayerData";
    };
    new GuiBitmapButtonCtrl(orcBurrowButton2) {
       bitmap = "art/gui/orcburrow.png";
@@ -376,7 +377,8 @@
       hovertime = "1000";
       isContainer = "0";
       canSave = "1";
-      canSaveDynamicFields = "0";
+      canSaveDynamicFields = "1";
+      buildingType = "AssaultUnitData";
    };
    new GuiBitmapButtonCtrl(orcBurrowButton3) {
       bitmap = "art/gui/orcburrow.png";
@@ -399,7 +401,8 @@
       hovertime = "1000";
       isContainer = "0";
       canSave = "1";
-      canSaveDynamicFields = "0";
+      canSaveDynamicFields = "1";
+      buildingType = "GrenadierUnitData";
    };
 };
 //--- OBJECT WRITE END ---
