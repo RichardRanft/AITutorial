@@ -98,10 +98,63 @@ function DeathMatchGame::onClientEnterGame(%game, %client)
     %client.AIMan.client = %client;
 }
 
+function DeathMatchGame::preparePlayer(%game, %client)
+{
+   echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::preparePlayer");
+
+   // Find a spawn point for the player
+   // This function currently relies on some helper functions defined in
+   // core/scripts/spawn.cs. For custom spawn behaviors one can either
+   // override the properties on the SpawnSphere's or directly override the
+   // functions themselves.
+   %playerSpawnPoint = %game.pickPlayerSpawnPoint($Game::DefaultPlayerSpawnGroups);
+   // Spawn a camera for this client using the found %spawnPoint
+   //%client.spawnPlayer(%playerSpawnPoint);
+   %game.spawnPlayer(%client, %playerSpawnPoint, false);
+   
+   commandToServer('overheadCam');
+}
+
+function DeathMatchGame::spawnPlayer(%game, %client, %spawnPoint, %noControl)
+{
+    echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::spawnPlayer");
+}
+
 function DeathMatchGame::onClientLeaveGame(%game, %client)
 {
    //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::onClientLeaveGame");
 
    parent::onClientLeaveGame(%game, %client);
 
+}
+
+function DeathMatchGame::pickPlayerSpawnPoint(%game, %spawnGroups)
+{
+    %point = ClientGroup.getCount() % 4;
+    if (%point = 0)
+        %point = 4;
+
+    %spawnPoint = "Player"@%point@"Spawn";
+    if (isObject(%spawnPoint))
+        return %spawnPoint;
+
+    // Didn't find a spawn point by looking for the groups
+    // so let's return the "default" SpawnSphere
+    // First create it if it doesn't already exist
+    if (!isObject(DefaultPlayerSpawnSphere))
+    {
+        %spawn = new SpawnSphere(DefaultPlayerSpawnSphere)
+        {
+            dataBlock      = "SpawnSphereMarker";
+            spawnClass     = $Game::DefaultCameraClass;
+            spawnDatablock = $Game::DefaultCameraDataBlock;
+        };
+
+        // Add it to the MissionCleanup group so that it
+        // doesn't get saved to the Mission (and gets cleaned
+        // up of course)
+        MissionCleanup.add(%spawn);
+    }
+
+    return DefaultPlayerSpawnSphere;
 }
