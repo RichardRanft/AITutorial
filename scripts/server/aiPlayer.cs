@@ -18,6 +18,10 @@
 // Since the AIPlayer doesn't implement it's own datablock, these callbacks
 // all take place in the PlayerData namespace.
 //-----------------------------------------------------------------------------
+function DefaultPlayerData::think(%this, %obj)
+{
+    return;
+}
 
 //-----------------------------------------------------------------------------
 // Demo Pathed AIPlayer.
@@ -88,6 +92,40 @@ function DemoPlayerData::fire(%this, %obj)
     %obj.nextTask();
 }
 
+function DemoPlayerData::think(%this, %obj)
+{
+    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
+    // bail - can't attack anything right now anyway, why bother with the search?
+    if (!%canFire)
+        return;
+
+    if (!isObject(%obj.target))
+    {
+        %target = %obj.getNearestTarget(100.0);
+        if (isObject(%target))
+        {
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
+                %obj.target = %obj.getNearestTarget(100.0);
+        }
+    }
+    if (!isObject(%obj.target))
+        %obj.target = %obj.findTargetInMissionGroup(25.0);
+
+    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
+    {
+        if (%canFire)
+            %obj.pushTask("attack" TAB %obj.target);
+
+        return;
+    }
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    {
+        %obj.pushTask("fire" TAB false);
+        return;
+    }
+    %obj.pushTask("clearTarget");
+}
+
 function AssaultUnitData::fire(%this, %obj)
 {
     %validTarget = isObject(%obj.target);
@@ -106,6 +144,40 @@ function AssaultUnitData::fire(%this, %obj)
 
     %obj.pushTask("checkTargetStatus");
     %obj.nextTask();
+}
+
+function AssaultUnitData::think(%this, %obj)
+{
+    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
+    // bail - can't attack anything right now anyway, why bother with the search?
+    if (!%canFire)
+        return;
+
+    if (!isObject(%obj.target))
+    {
+        %target = %obj.getNearestTarget(100.0);
+        if (isObject(%target))
+        {
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
+                %obj.target = %obj.getNearestTarget(100.0);
+        }
+    }
+    if (!isObject(%obj.target))
+        %obj.target = %obj.findTargetInMissionGroup(25.0);
+
+    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
+    {
+        if (%canFire)
+            %obj.pushTask("attack" TAB %obj.target);
+
+        return;
+    }
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    {
+        %obj.pushTask("fire" TAB false);
+        return;
+    }
+    %obj.pushTask("clearTarget");
 }
 
 function GrenadierUnitData::fire(%this, %obj)
@@ -142,6 +214,41 @@ function GrenadierUnitData::fire(%this, %obj)
     %obj.trigger = %obj.schedule(%obj.shootingDelay, pushTask, "checkTargetStatus");
     %obj.nextTask();
 }
+
+function GrenadierUnitData::think(%this, %obj)
+{
+    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
+    // bail - can't attack anything right now anyway, why bother with the search?
+    if (!%canFire)
+        return;
+
+    if (!isObject(%obj.target))
+    {
+        %target = %obj.getNearestTarget(100.0);
+        if (isObject(%target))
+        {
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
+                %obj.target = %obj.getNearestTarget(100.0);
+        }
+    }
+    if (!isObject(%obj.target))
+        %obj.target = %obj.findTargetInMissionGroup(25.0);
+
+    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
+    {
+        if (%canFire)
+            %obj.pushTask("attack" TAB %obj.target);
+
+        return;
+    }
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    {
+        %obj.pushTask("fire" TAB false);
+        return;
+    }
+    %obj.pushTask("clearTarget");
+}
+
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
@@ -753,36 +860,8 @@ function AIPlayer::aimAt(%this, %object)
 /// </summary>
 function AIPlayer::think(%this)
 {
-    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
-    // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
-        return;
-
-    if (!isObject(%this.target))
-    {
-        %target = %this.getNearestTarget(100.0);
-        if (isObject(%target))
-        {
-            if (%this.seeTarget(%this.getPosition(), %target.getPosition(), 80.0))
-                %this.target = %this.getNearestTarget(100.0);
-        }
-    }
-    if (!isObject(%this.target))
-        %this.target = %this.findTargetInMissionGroup(25.0);
-
-    if (isObject(%this.target) && %this.target.getState() !$= "dead")
-    {
-        if (%canFire)
-            %this.pushTask("attack" TAB %this.target);
-
-        return;
-    }
-    if (isObject(%this.target) && %this.target.getState() $= "dead")
-    {
-        %this.pushTask("fire" TAB false);
-        return;
-    }
-    %this.pushTask("clearTarget");
+    %datablock = %this.getDataBlock();
+    %datablock.think(%this);
 }
 
 //-----------------------------------------------------------------------------
@@ -866,7 +945,10 @@ function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority,
 {
     %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %priority, %onPath);
     %this.loadOutUnit(%newUnit, true);
-    %this.priorityGroup.add(%newUnit);
+    if (%newUnit.priority > 0)
+        %this.priorityGroup.add(%newUnit);
+    else
+        %this.idleGroup.add(%newUnit);
     return %newUnit;
 }
 

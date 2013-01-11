@@ -173,7 +173,7 @@ function serverCmdspawnBaddie(%client)
     // Create a new, generic AI Player
     // Position will be at the camera's location
     // Datablock will determine the type of actor
-    %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData");
+    %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData", 0);
     %enemy.team = 0;
     MissionGroup.add(%enemy);
 }
