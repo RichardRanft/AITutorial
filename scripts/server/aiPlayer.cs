@@ -72,7 +72,8 @@ function DemoPlayerData::fire(%this, %obj)
     %validTarget = isObject(%obj.target);
     if (!%validTarget || %obj.target.getState() $= "dead")
     {
-        %obj.nextTask();
+        cancel(%obj.trigger);
+        %obj.pushTask("clearTarget");
         return;
     }
 
@@ -92,9 +93,8 @@ function AssaultUnitData::fire(%this, %obj)
     %validTarget = isObject(%obj.target);
     if (!%validTarget || %obj.target.getState() $= "dead")
     {
-        %obj.aimAt(0);
-        %obj.setImageTrigger(0, 0);
         cancel(%obj.trigger);
+        %obj.pushTask("clearTarget");
         return;
     }
 
@@ -113,7 +113,8 @@ function GrenadierUnitData::fire(%this, %obj)
     %validTarget = isObject(%obj.target);
     if (!%validTarget || %obj.target.getState() $= "dead")
     {
-        %obj.nextTask();
+        cancel(%obj.trigger);
+        %obj.pushTask("clearTarget");
         return;
     }
 
@@ -314,7 +315,7 @@ function AIPlayer::checkTargetStatus(%this)
 
 function AIPlayer::clearTarget(%this)
 {
-    %this.aimAt(0);
+    %this.setAimObject(0);
     %this.target = "";
     %this.schedule(32, "setImageTrigger", 0, 0);
     %this.nextTask();
@@ -369,10 +370,22 @@ function AIPlayer::moveToNode(%this,%index)
 }
 
 //-----------------------------------------------------------------------------
-//
+//  Task system
 //-----------------------------------------------------------------------------
+// The system needs a prioritization method to "float" higher-priority tasks 
+// toward the front of the list.
 
-function AIPlayer::pushTask(%this,%method)
+/// <summary>
+/// This function creates a task for the AI unit to carry out.  The <method>
+/// parameter is the name of the method to call when carrying out the task plus
+/// any method parameters in a TAB separated list.
+///
+/// For example:
+/// %unit.pushTask("method1"); // calls a method with no parameters
+/// %unit.pushTask("method2" TAB true); // calls a method and a parameter
+/// </summary>
+/// <param name="method">The unit method to call, plus method parameters in a TAB separated string list.</param>
+function AIPlayer::pushTask(%this, %method)
 {
     if (!isObject(%this.taskList))
         %this.taskList = new SimSet();
@@ -382,6 +395,9 @@ function AIPlayer::pushTask(%this,%method)
     %this.executeTask();
 }
 
+/// <summary>
+/// This function clears the unit's task list.
+/// </summary>
 function AIPlayer::clearTasks(%this)
 {
     if (isObject(%this.taskList))
@@ -390,11 +406,19 @@ function AIPlayer::clearTasks(%this)
         %this.taskList = new SimSet();
 }
 
+/// <summary>
+/// This function begins execution of the next task in the unit's list.
+/// </summary>
 function AIPlayer::nextTask(%this)
 {
     %this.executeTask();
 }
 
+/// <summary>
+/// This function gets the next task in the unit's list and parses out the 
+/// method and parameters for the task method, then removes the task from 
+/// the list and calls the method.
+/// </summary>
 function AIPlayer::executeTask(%this)
 {
     %taskCount = %this.taskList.getCount();
@@ -422,6 +446,12 @@ function AIPlayer::executeTask(%this)
         }
     }
 }
+
+//-----------------------------------------------------------------------------
+//  Goal system
+//-----------------------------------------------------------------------------
+// This system should handle more high-level goals such as get repairs or find
+// ammo that contain task lists to accomplish the goal.
 
 //-----------------------------------------------------------------------------
 
@@ -465,6 +495,7 @@ function AIPlayer::fire(%this, %bool)
         if (%fireState)
             %this.setImageTrigger(0, 0);
         cancel(%this.trigger);
+        %this.pushTask("clearTarget");
     }
     %this.nextTask();
 }
@@ -593,6 +624,9 @@ function AIPlayer::getNearestTarget(%this, %radius)
     return %nearestTarget;
 }
 
+/// <summary>
+/// This function handles the unit's thinking.  Simple minds and all that....
+/// </summary>
 function AIPlayer::think(%this)
 {
     %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
@@ -610,10 +644,17 @@ function AIPlayer::think(%this)
     if (isObject(%this.target) && %this.target.getState() !$= "dead")
     {
         if (%canFire)
+        {
             %this.pushTask("attack" TAB %this.target);
+            return;
+        }
     }
     if (isObject(%this.target) && %this.target.getState() $= "dead")
+    {
         %this.pushTask("fire" TAB false);
+        return;
+    }
+    %this.pushTask("clearTarget");
 }
 
 //-----------------------------------------------------------------------------
@@ -627,6 +668,35 @@ $AIManager::SleepRadius = 250;
 if (!isObject(AIManager))
     new ScriptObject(AIManager);
 
+/// <summary>
+/// This function starts an AIManager object.  The AIManager is to coordinate 
+/// AI unit processing to help conserve processing time.
+///
+/// Units within <priorityRadius> will have their "think" method called 
+/// every <priorityTime> milliseconds.  Units outside of <priorityRadius> but
+/// inside of <sleepRadius> will have their "think" method called every
+/// <idleTime> milliseconds.  Units outside of <sleepRadius> will not have their
+/// "think" method called at all.
+///
+/// Units can be assigned a priority number which will be used to help determine if
+/// that unit should ever sleep or if it ever needs priority timing.
+///
+/// Units with priority 2 or higher will never be put to "sleep."
+/// Units with priority 1 will be sorted normally.
+/// Units with priority 0 will never be processed faster than <idleTime>.
+///
+/// So, perhaps RTS combat units should be priority 2 so that they can always respond
+/// to approaching enemies even when far from the center of attention.  Then ambient 
+/// non-combatant or "decorative" units should have a priority of 1 or 0 depending on
+/// whether you want them to respond quickly to nearby events or not.  Really, this 
+/// would probably be more handy for RPG-light games where spawned units (vendors, guards)
+/// would need to be present but might not need to actually do anything while the players
+/// aren't in their immediate vicinity.
+/// </summary>
+/// <param name="priorityTime">The number of milliseconds between "think" calls for priority units.</param>
+/// <param name="idleTime">The number of milliseconds between "think" calls for idle units.</param>
+/// <param name="priorityRadius">The number of world units around any player camera within which units will be given priority timing.</param>
+/// <param name="sleepRadius">The number of world units around any player camera outside of which units will be suspended from thinking.</param>
 function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
 {
     MissionCleanup.add(%this);
@@ -636,24 +706,15 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sle
     %this.idleTime = (%idleTime !$= "" ? %idleTime : $AIManager::IdleTime);
 
     if (!isObject(%this.priorityGroup))
-    {
         %this.priorityGroup = new SimSet();
-        MissionCleanup.add(%this.priorityGroup);
-    }
     else
         %this.priorityGroup.clear();
     if (!isObject(%this.idleGroup))
-    {
         %this.idleGroup = new SimSet();
-        MissionCleanup.add(%this.idleGroup);
-    }
     else
         %this.idleGroup.clear();
     if (!isObject(%this.sleepGroup))
-    {
         %this.sleepGroup = new SimSet();
-        MissionCleanup.add(%this.sleepGroup);
-    }
     else
         %this.sleepGroup.clear();
 
@@ -664,14 +725,27 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sle
     %this.started = true;
 }
 
+/// <summary>
+/// This function requests that the AIManager spawn a unit and add it to its group.
+/// </summary>
+/// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
+/// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>
+/// <param name="datablock">The datablock that the unit should use.</param>
+/// <param name="priority">The priority of this unit. 0 to 2 from low to high priority.  Defaults to 1.</param>
+/// <param name="onPath">If spawnLocation is a path, this should be true to get the unit to spawn on and follow the path.</param>
+/// <return>Returns the new unit.</return>
 function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %priority, %onPath);
-    %this.loadOutUnit(%newUnit);
+    %this.loadOutUnit(%newUnit, true);
     %this.priorityGroup.add(%newUnit);
     return %newUnit;
 }
 
+/// <summary>
+/// This function handles sorting the AIManager's managed units by distance and
+/// priority.
+/// </summary>
 function AIManager::think(%this)
 {
     // The purpose here is to reduce overhead from AI for units that are
@@ -755,6 +829,11 @@ function AIManager::think(%this)
     %this.schedule(500, "think");
 }
 
+/// <summary>
+/// This function finds the nearest client to the position in question.
+/// </summary>
+/// <param name="position">The position to test clients against.</param>
+/// <return>Returns the position of the client nearest to <position>.</return>
 function AIManager::findNearestClientPosition(%this, %position)
 {
     %clientCount = ClientGroup.getCount();
@@ -777,6 +856,10 @@ function AIManager::findNearestClientPosition(%this, %position)
     return %pos;
 }
 
+/// <summary>
+/// This function processes unit.think() for all units in the high priority
+/// group every <priorityTime> milliseconds.
+/// </summary>
 function AIManager::priorityThink(%this)
 {
     %count = %this.priorityGroup.getCount();
@@ -790,6 +873,10 @@ function AIManager::priorityThink(%this)
     %this.schedule(%this.priorityTime, "priorityThink");
 }
 
+/// <summary>
+/// This function processes unit.think() for all units in the low priority 
+/// group every <idleTime> milliseconds.
+/// </summary>
 function AIManager::idleThink(%this)
 {
     %count = %this.idleGroup.getCount();
@@ -803,6 +890,15 @@ function AIManager::idleThink(%this)
     %this.schedule(%this.idleTime, "idleThink");
 }
 
+/// <summary>
+/// This function asks AIPlayer to spawn a unit.
+/// </summary>
+/// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
+/// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>
+/// <param name="datablock">The datablock that the unit should use.</param>
+/// <param name="priority">The priority of this unit. 0 to 2 from low to high priority.  Defaults to 1.</param>
+/// <param name="onPath">If spawnLocation is a path, this should be true to get the unit to spawn on and follow the path.</param>
+/// <return>Returns the new unit, or 0 on failure.</return>
 function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     if (%onPath)
@@ -837,28 +933,27 @@ function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %
     }
 }
 
-function AIManager::loadOutUnit(%this, %unit)
+/// <summary>
+/// This function loads out the unit with the equipment it should have based on 
+/// </summary>
+/// <param name="unit">The unit to equip.</param>
+/// <param name="infiniteAmmo">If true, the weapon will not consume ammo.</param>
+function AIManager::loadOutUnit(%this, %unit, %infiniteAmmo)
 {
     %unit.clearWeaponCycle();
-    switch$(%unit.getDatablock().getName())
-    {
-        case "DemoPlayerData":
-            %unit.setInventory(Ryder, 1);
-            %unit.setInventory(RyderClip, %unit.maxInventory(RyderClip));
-            %unit.setInventory(RyderAmmo, %unit.maxInventory(RyderAmmo));    // Start the gun loaded
-            %unit.addToWeaponCycle(Ryder);
+    
+    %datablock = %unit.getDatablock();
+    %weapon = %datablock.mainWeapon.image;
+    %weapon.infiniteAmmo = %infiniteAmmo;
+    %clip = %weapon.clip;
+    %ammo = %weapon.ammo;
 
-        case "AssaultUnitData":
-            %unit.setInventory(Lurker, 1);
-            %unit.setInventory(LurkerClip, %unit.maxInventory(LurkerClip));
-            %unit.setInventory(LurkerAmmo, %unit.maxInventory(LurkerAmmo));  // Start the gun loaded
-            %unit.addToWeaponCycle(Lurker);
+    %unit.setInventory(%weapon, 1);
+    if (%clip !$= "")
+        %unit.setInventory(%clip, %unit.maxInventory(%clip));
+    %unit.setInventory(%ammo, %unit.maxInventory(%ammo));    // Start the gun loaded
+    %unit.addToWeaponCycle(%weapon);
 
-        case "GrenadierUnitData":
-            %unit.setInventory(LurkerGrenadeLauncher, 1);
-            %unit.setInventory(LurkerGrenadeAmmo, %unit.maxInventory(LurkerGrenadeAmmo));
-            %unit.addToWeaponCycle(LurkerGrenadeLauncher);
-    }
     if (%unit.getDatablock().mainWeapon.image !$= "")
         %unit.mountImage(%unit.getDatablock().mainWeapon.image, 0);
     else
