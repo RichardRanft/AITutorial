@@ -181,6 +181,17 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 // ----------------------------------------------------------------------------
 // Some handy getDistance/nearestTarget functions for the AI to use
 // ----------------------------------------------------------------------------
+
+/// <summary>
+/// This function calculates a firing offset for ballistic projectiles.  Thanks to 
+/// Bryce for the vast majority of this function -
+/// https://www.garagegames.com/community/resources/view/19739
+/// <summary>
+/// <param name="pos">The target position.</param>
+/// <param name="roundVel">The muzzle velocity of the projectile.</param>
+/// <param name="mortarAim">True to use high arc aim, false to use flat arc aim.</param>
+/// <param name="gMod">The amount of gravity to apply to the projectile.</param>
+/// <return>Returns the z axis aim offset position - or how high above the target to aim.</return>
 function AIPlayer::GetBallisticAimPos(%this, %pos, %roundVel, %mortarAim, %gMod)  
 {  
     %posFlat = %pos;
@@ -209,6 +220,11 @@ function AIPlayer::GetBallisticAimPos(%this, %pos, %roundVel, %mortarAim, %gMod)
     return %offsetHeight;
 }  
 
+/// <summary>
+/// This function calculates the distance from the unit to a target object.
+/// <summary>
+/// <param name="target">The target to get the distance to.</param>
+/// <return>Returns the distance from the unit to the target.</return>
 function AIPlayer::getTargetDistance(%this, %target)
 {
    %tgtPos = %target.getPosition();
@@ -217,7 +233,14 @@ function AIPlayer::getTargetDistance(%this, %target)
    return %distance;
 }
 
-// Return angle between two vectors
+/// <summary>
+/// This function calculates the angle between two vectors.  Note! does not
+/// take a %this parameter, so must be called scoped: 
+/// %angle = AIPlayer::getAngle(%vec1, %vec2);
+/// <summary>
+/// <param name="vec1">The first vector.</param>
+/// <param name="vec2">The second vector.</param>
+/// <return>Returns a scalar angle in degrees between the two vectors.</return>
 function AIPlayer::getAngle(%vec1, %vec2)
 {
   %vec1n = VectorNormalize(%vec1);
@@ -237,7 +260,9 @@ function AIPlayer::getAngle(%vec1, %vec2)
 /// <param name="pos">The target position.</param>
 /// <return>Returns a scalar angle in degrees.</return>
 function AIPlayer::getAngleTo(%this, %pos)
-{ return AIPlayer::getAngle(%this.getVectorTo(%pos), %this.getEyeVector()); }
+{
+    return AIPlayer::getAngle(%this.getVectorTo(%pos), %this.getEyeVector());
+}
 
 // Return position vector to a position
 /// <summary>
@@ -304,6 +329,11 @@ function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle)
     return false;
 }
 
+/// <summary>
+/// This function tells the unit to follow a path object.
+/// <summary>
+/// <param name="path">The path object to follow.</param>
+/// <param name="node">The path node to move to.</param>
 function AIPlayer::followPath(%this, %path, %node)
 {
    // Start the player following a path
@@ -328,6 +358,9 @@ function AIPlayer::followPath(%this, %path, %node)
    }
 }
 
+/// <summary>
+/// This function tells the unit to move to the next node in it's assigned path.
+/// <summary>
 function AIPlayer::moveToNextNode(%this)
 {
    if (%this.targetNode < 0 || %this.currentNode < %this.targetNode)
@@ -344,6 +377,11 @@ function AIPlayer::moveToNextNode(%this)
          %this.moveToNode(%this.currentNode - 1);
 }
 
+/// <summary>
+/// This function tells the unit to move to a specific node location on its assigned
+/// path object.
+/// <summary>
+/// <param name="index">The index of the node to move to.</param>
 function AIPlayer::moveToNode(%this,%index)
 {
    // Move to the given path node index
@@ -352,6 +390,11 @@ function AIPlayer::moveToNode(%this,%index)
    %this.setMoveDestination(%node.getTransform(), %index == %this.targetNode);
 }
 
+/// <summary>
+/// This function determines the distance from the unit to a target.
+/// <summary>
+/// <param name="target">The target object.</param>
+/// <return>Returns the distance from the unit to the target.</return>
 function AIPlayer::getTargetDistance(%this, %target)
 {
    %tgtPos = %target.getPosition();
@@ -360,6 +403,10 @@ function AIPlayer::getTargetDistance(%this, %target)
    return %distance;
 }
 
+/// <summary>
+/// This function finds the nearest "player" object to the unit.
+/// <summary>
+/// <return>Returns the nearest "player" or -1 if none is found.</return>
 function AIPlayer::getNearestPlayerTarget(%this)
 {
    %index = -1;
@@ -390,8 +437,15 @@ function AIPlayer::getNearestPlayerTarget(%this)
    return %index;
 }
 
+/// <summary>
+/// This function finds the nearest AI unit in the MissionGroup to the unit and
+/// within the specified radius.
+/// <summary>
+/// <param name="radius">The search radius.</param>
+/// <return>Returns the nearest AI unit or a blank string if none are within range.</return>
 function AIPlayer::findTargetInMissionGroup(%this, %radius)
 {
+    %target = "";
     %dist = %radius;
     %botPos = %this.getPosition();
     %count = MissionGroup.getCount();
@@ -414,8 +468,15 @@ function AIPlayer::findTargetInMissionGroup(%this, %radius)
     return %target;
 }
 
+/// <summary>
+/// This function finds the nearest AI unit that is not on this unit's team within the
+/// given radius.
+/// <summary>
+/// <param name="radius">The search radius.</param>
+/// <return>Returns the nearest non-team unit or a blank string if none are in range.</return>
 function AIPlayer::getNearestTarget(%this, %radius)
 {
+    %nearestTarget = "";
     %team = %this.team;
     %dist = %radius;
     %botPos = %this.getPosition();
@@ -446,11 +507,21 @@ function AIPlayer::getNearestTarget(%this, %radius)
     return %nearestTarget;
 }
 
-function AIPlayer::done(%this,%time)
+/// <summary>
+/// This function destroys the unit after the number of milliseconds specified.
+/// <summary>
+/// <param name="time">The wait time in milliseconds.</param>
+function AIPlayer::done(%this, %time)
 {
-   %this.schedule(0, "delete");
+    if (%time $= "")
+        %time = 32;
+    %this.schedule(%time, "delete");
 }
 
+/// <summary>
+/// This function instructs the unit to attack a target.
+/// <summary>
+/// <param name="target">The target object to attack.</param>
 function AIPlayer::attack(%this, %target)
 {
     %this.target = %target;
@@ -458,6 +529,10 @@ function AIPlayer::attack(%this, %target)
     %this.schedule(128, pushTask, "fire" TAB true);
 }
 
+/// <summary>
+/// This function instructs the unit to play a specified animation sequence.
+/// <summary>
+/// <param name="seq">The animation sequence to play.</param>
 function AIPlayer::animate(%this,%seq)
 {
    %this.setActionThread(%seq);
@@ -597,6 +672,10 @@ function AIPlayer::clearTarget(%this)
 }
 
 
+/// <summary>
+/// This function tells the unit to continue pulsing the trigger using the it's 
+/// shooting delay as frequency.
+/// <summary>
 function AIPlayer::singleShot(%this)
 {
     // The shooting delay is used to pulse the trigger
@@ -607,11 +686,21 @@ function AIPlayer::singleShot(%this)
         %this.trigger = %this.schedule(%this.shootingDelay, singleShot);
 }
 
+/// <summary>
+/// This function tells the unit to stand by for the specified number of seconds.
+/// <summary>
+/// <param name="time">The wait time in seconds.</param>
 function AIPlayer::wait(%this, %time)
 {
-   %this.schedule(%time * 1000, "nextTask");
+    if (%time $= "")
+        %time = 1;
+    %this.schedule(%time * 1000, "nextTask");
 }
 
+/// <summary>
+/// This function tells the unit to begin or stop firing its weapon.
+/// <summary>
+/// <param name="bool">Start firing if true, stop firing and clear target if false.</param>
 function AIPlayer::fire(%this, %bool)
 {
     if (!isObject(%this.target))
@@ -635,6 +724,10 @@ function AIPlayer::fire(%this, %bool)
     %this.nextTask();
 }
 
+/// <summary>
+/// This function tells the unit to aim at the specified object
+/// <summary>
+/// <param name="object">The object to aim at.</param>
 function AIPlayer::aimAt(%this, %object)
 {
     if (isObject(%object))
