@@ -175,6 +175,13 @@ function serverCmdspawnBaddie(%client)
     // Datablock will determine the type of actor
     %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData", 0);
     %enemy.team = 0;
+    
+    if (!isObject(Team0List))
+        new SimSet(Team0List){};
+    //if ( !isObject (Team0List) )
+        //Team0List = new SimSet();
+
+    Team0List.add(%enemy);
     MissionGroup.add(%enemy);
 }
 
@@ -310,6 +317,8 @@ function serverCmdstopAttack(%client)
     // If no valid target was found, or left mouse
     // clicked again on terrain, stop firing and aiming
     %teamList = "Team"@%client.team@"List";
+    if (!isObject(%teamList))
+        return;
     for (%c = 0; %c < %teamList.getCount(); %c++)
     {
         %unit = %teamList.getObject(%c);

@@ -640,6 +640,7 @@ datablock PlayerData(DefaultPlayerData)
 
    // Allowable Inventory Items
    mainWeapon = Lurker;
+   shootingDelay = 500;
 
    maxInv[Lurker] = 1;
    maxInv[LurkerClip] = 20;

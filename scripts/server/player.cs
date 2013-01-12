@@ -254,7 +254,7 @@ function Armor::onDamage(%this, %obj, %delta)
 function Armor::onDisabled(%this, %obj, %state)
 {
    // Release the main weapon trigger
-   %obj.setImageTrigger(0, false);
+   %obj.schedule(100, setImageTrigger, 0, false);
 
    // Toss current mounted weapon and ammo if any
    %item = %obj.getMountedImage($WeaponSlot).item;
@@ -281,6 +281,7 @@ function Armor::onDisabled(%this, %obj, %state)
    // Schedule corpse removal. Just keeping the place clean.
    %obj.schedule($CorpseTimeoutValue - 1000, "startFade", 1000, 0, true);
    %obj.schedule($CorpseTimeoutValue, "delete");
+   %obj.removeFromTeam();
 }
 
 //-----------------------------------------------------------------------------

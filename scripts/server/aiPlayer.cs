@@ -20,7 +20,58 @@
 //-----------------------------------------------------------------------------
 function DefaultPlayerData::think(%this, %obj)
 {
-    return;
+    if(%obj.getState() $= "dead")
+        return;
+    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
+    // bail - can't attack anything right now anyway, why bother with the search?
+    if (!%canFire)
+        return;
+
+    if (!isObject(%obj.target))
+    {
+        %target = %obj.getNearestTarget(100.0);
+        if (isObject(%target))
+        {
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
+                %obj.target = %target;
+        }
+    }
+    if (!isObject(%obj.target))
+        %obj.target = %obj.findTargetInMissionGroup(25.0);
+
+    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
+    {
+        if (%canFire)
+            %obj.pushTask("attack" TAB %obj.target);
+
+        return;
+    }
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    {
+        %obj.pushTask("fire" TAB false);
+        return;
+    }
+    %obj.pushTask("clearTarget");
+}
+
+function DefaultPlayerData::fire(%this, %obj)
+{
+    %validTarget = isObject(%obj.target);
+    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
+    {
+        cancel(%obj.trigger);
+        %obj.pushTask("clearTarget");
+        return;
+    }
+
+    %obj.aimOffset = 0;
+    %fireState = %obj.getImageTrigger(0);
+
+    if (!%fireState)
+        %obj.setImageTrigger(0, 1);
+
+    %obj.pushTask("checkTargetStatus");
+    %obj.nextTask();
 }
 
 //-----------------------------------------------------------------------------
@@ -74,7 +125,7 @@ function DemoPlayer::onEndSequence(%this,%obj,%slot)
 function DemoPlayerData::fire(%this, %obj)
 {
     %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead")
+    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
     {
         cancel(%obj.trigger);
         %obj.pushTask("clearTarget");
@@ -94,6 +145,8 @@ function DemoPlayerData::fire(%this, %obj)
 
 function DemoPlayerData::think(%this, %obj)
 {
+    if(%obj.getState() $= "dead")
+        return;
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -104,8 +157,8 @@ function DemoPlayerData::think(%this, %obj)
         %target = %obj.getNearestTarget(100.0);
         if (isObject(%target))
         {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
-                %obj.target = %obj.getNearestTarget(100.0);
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
+                %obj.target = %target;
         }
     }
     if (!isObject(%obj.target))
@@ -129,7 +182,7 @@ function DemoPlayerData::think(%this, %obj)
 function AssaultUnitData::fire(%this, %obj)
 {
     %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead")
+    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
     {
         cancel(%obj.trigger);
         %obj.pushTask("clearTarget");
@@ -148,6 +201,8 @@ function AssaultUnitData::fire(%this, %obj)
 
 function AssaultUnitData::think(%this, %obj)
 {
+    if(%obj.getState() $= "dead")
+        return;
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -158,8 +213,8 @@ function AssaultUnitData::think(%this, %obj)
         %target = %obj.getNearestTarget(100.0);
         if (isObject(%target))
         {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
-                %obj.target = %obj.getNearestTarget(100.0);
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
+                %obj.target = %target;
         }
     }
     if (!isObject(%obj.target))
@@ -183,7 +238,7 @@ function AssaultUnitData::think(%this, %obj)
 function GrenadierUnitData::fire(%this, %obj)
 {
     %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead")
+    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
     {
         cancel(%obj.trigger);
         %obj.pushTask("clearTarget");
@@ -217,6 +272,8 @@ function GrenadierUnitData::fire(%this, %obj)
 
 function GrenadierUnitData::think(%this, %obj)
 {
+    if(%obj.getState() $= "dead")
+        return;
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -227,8 +284,8 @@ function GrenadierUnitData::think(%this, %obj)
         %target = %obj.getNearestTarget(100.0);
         if (isObject(%target))
         {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), 80.0))
-                %obj.target = %obj.getNearestTarget(100.0);
+            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
+                %obj.target = %target;
         }
     }
     if (!isObject(%obj.target))
@@ -252,6 +309,13 @@ function GrenadierUnitData::think(%this, %obj)
 //-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
+
+function AIPlayer::removeFromTeam(%this)
+{
+    %teamList = "Team"@%this.team@"List";
+    if (%teamList.isMember(%this))
+        %teamList.remove(%this);
+}
 
 function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 {
@@ -405,11 +469,14 @@ function AIPlayer::getTargetDirection(%this, %target)
 /// <summary>
 /// <param name="objPos">The unit's position.</param>
 /// <param name="targetPos">The target's position.</param>
-/// <param name="angle">The number of degrees off of forward that the cone extends (1/2 view width).</param>
+/// <param name="angle">The target's angle off of direct front.</param>
+/// <param name="viewAngle">The number of degrees off of forward that the cone extends (1/2 view width).</param>
 /// <return>Returns true if the target is in "sight" or false if not.</return>
-function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle)
+function AIPlayer::seeTarget(%this, %objPos, %targetPos, %angle, %viewAngle)
 {
-    if ( %angle < 60 )
+    if (%viewAngle $= "")
+        %viewAngle = 80;
+    if ( %angle <= %viewAngle )
     {
         %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
             $TypeMasks::InteriorObjectType | $TypeMasks::ShapeBaseObjectType | 
@@ -588,11 +655,12 @@ function AIPlayer::getNearestTarget(%this, %radius)
     %dist = %radius;
     %botPos = %this.getPosition();
     %count = ClientGroup.getCount();
-    for(%i = 0; %i <= %count; %i++)
+    for(%i = 0; %i < %count; %i++)
     {
-        if (%i == %team)
+        %client = ClientGroup.getObject(%i);
+        if (%client.team == %team)
             continue;
-        %teamList =  "Team"@%i@"List";
+        %teamList =  "Team"@%client.team@"List";
         if (!isObject(%teamList))
             continue;
         %teamCount = %teamList.getCount();
@@ -604,11 +672,31 @@ function AIPlayer::getNearestTarget(%this, %radius)
             %playerPos = %target.getPosition();
 
             %tempDist = VectorDist(%playerPos, %botPos);
-            if (%dist > %tempDist && %dist < %radius)
+            if (%dist > %tempDist && %dist <= %radius)
             {
                 %dist = %tempDist;
                 %nearestTarget = %target;
             }
+        }
+    }
+    if (%team == 0)
+        return %nearestTarget;
+    %teamList =  "Team0List";
+    if (!isObject(%teamList))
+        return %nearestTarget;
+    %teamCount = %teamList.getCount();
+    %teamIndex = 0;
+    while (%teamIndex < %teamCount)
+    {
+        %target = %teamList.getObject(%teamIndex);
+        %teamIndex++;
+        %playerPos = %target.getPosition();
+
+        %tempDist = VectorDist(%playerPos, %botPos);
+        if (%dist > %tempDist && %dist < %radius)
+        {
+            %dist = %tempDist;
+            %nearestTarget = %target;
         }
     }
     return %nearestTarget;
@@ -972,9 +1060,12 @@ function AIManager::think(%this)
             %unit = %this.priorityGroup.getObject(%index);
             if (!isObject(%unit) || %unit.getState() $= "dead")
             {
-                %this.priorityGroup.remove(%unit);
-                %hCount--;
-                %index--;
+                if (%this.priorityGroup.isMember(%unit))
+                {
+                    %this.priorityGroup.remove(%unit);
+                    %hCount--;
+                }
+                %index++;
                 continue;
             }
             %unitPosition = %unit.getPosition();
@@ -998,9 +1089,12 @@ function AIManager::think(%this)
             %unit = %this.idleGroup.getObject(%index);
             if (!isObject(%unit) || %unit.getState() $= "dead")
             {
-                %this.idleGroup.remove(%unit);
-                %hCount--;
-                %index--;
+                if (%this.idleGroup.isMember(%unit))
+                {
+                    %this.idleGroup.remove(%unit);
+                    %hCount--;
+                }
+                %index++;
                 continue;
             }
             %unitPosition = %unit.getPosition();
@@ -1031,9 +1125,12 @@ function AIManager::think(%this)
             %unit = %this.sleepGroup.getObject(%index);
             if (!isObject(%unit) || %unit.getState() $= "dead")
             {
-                %this.sleepGroup.remove(%unit);
-                %hCount--;
-                %index--;
+                if (%this.sleepGroup.isMember(%unit))
+                {
+                    %this.sleepGroup.remove(%unit);
+                    %hCount--;
+                }
+                %index++;
                 continue;
             }
             %unitPosition = %unit.getPosition();
