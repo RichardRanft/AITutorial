@@ -31,6 +31,7 @@ exec("./player.cs");
 
 // Load our player scripts
 exec("./aiManager.cs");
+exec("./aiClientManager.cs");
 exec("./aiPlayer.cs");
 
 exec("./vehicle.cs");

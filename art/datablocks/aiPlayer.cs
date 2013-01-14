@@ -47,6 +47,16 @@ function DefaultPlayerData::think(%this, %obj)
 {
     if(%obj.getState() $= "dead")
         return;
+	
+	%damageLvl = %obj.getDamageLevel();
+	if (%damageLvl < %this.maxDamage)
+	{
+		if (%damageLvl < %obj.damageLvl)
+		{
+			%obj.damageLvl = %damageLvl;
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+		}
+	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -172,6 +182,15 @@ function DemoPlayerData::think(%this, %obj)
 {
     if(%obj.getState() $= "dead")
         return;
+	%damageLvl = %obj.getDamageLevel();
+	if (%damageLvl < %this.maxDamage)
+	{
+		if (%damageLvl < %obj.damageLvl)
+		{
+			%obj.damageLvl = %damageLvl;
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+		}
+	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -228,6 +247,15 @@ function AssaultUnitData::think(%this, %obj)
 {
     if(%obj.getState() $= "dead")
         return;
+	%damageLvl = %obj.getDamageLevel();
+	if (%damageLvl < %this.maxDamage)
+	{
+		if (%damageLvl < %obj.damageLvl)
+		{
+			%obj.damageLvl = %damageLvl;
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+		}
+	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)
@@ -299,6 +327,15 @@ function GrenadierUnitData::think(%this, %obj)
 {
     if(%obj.getState() $= "dead")
         return;
+	%damageLvl = %obj.getDamageLevel();
+	if (%damageLvl < %this.maxDamage)
+	{
+		if (%damageLvl < %obj.damageLvl)
+		{
+			%obj.damageLvl = %damageLvl;
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+		}
+	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
     if (!%canFire)

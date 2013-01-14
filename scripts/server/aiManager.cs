@@ -5,6 +5,7 @@ $AIManager::PriorityTime = 200;
 $AIManager::IdleTime = 1000;
 $AIManager::PriorityRadius = 75;
 $AIManager::SleepRadius = 250;
+$AIManager::ThinkTime = 500;
 
 if (!isObject(AIManager))
     new ScriptObject(AIManager);
@@ -38,13 +39,15 @@ if (!isObject(AIManager))
 /// <param name="idleTime">The number of milliseconds between "think" calls for idle units.</param>
 /// <param name="priorityRadius">The number of world units around any player camera within which units will be given priority timing.</param>
 /// <param name="sleepRadius">The number of world units around any player camera outside of which units will be suspended from thinking.</param>
-function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
+/// <param name="thinkTime">The number of milliseconds between manager think calls (for prioritizing AI units).</param>
+function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius, %thinkTime)
 {
     MissionCleanup.add(%this);
     %this.priorityRadius = (%priorityRadius !$= "" ? %priorityRadius : $AIManager::PriorityRadius);
     %this.sleepRadius = (%sleepRadius !$= "" ? %sleepRadius : $AIManager::SleepRadius);
     %this.priorityTime = (%priorityTime !$= "" ? %priorityTime : $AIManager::PriorityTime);
     %this.idleTime = (%idleTime !$= "" ? %idleTime : $AIManager::IdleTime);
+    %this.thinkTime = (%thinkTime !$= "" ? %thinkTime : $AIManager::ThinkTime);
 
     if (!isObject(%this.priorityGroup))
         %this.priorityGroup = new SimSet();
@@ -97,104 +100,101 @@ function AIManager::think(%this)
     // list to another based on the unit's distance from the nearest 
     // player's camera, since any unit near any player's 
     // camera needs to be "thinking" at the correct priority.
-    if (isObject(%this.client))
-    {
-        %hCount = %this.priorityGroup.getCount();
-        %index = 0;
-        while (%index < %hCount)
-        {
-            %unit = %this.priorityGroup.getObject(%index);
-            if (!isObject(%unit) || %unit.getState() $= "dead")
-            {
-                if (%this.priorityGroup.isMember(%unit))
-                {
-                    %this.priorityGroup.remove(%unit);
-                    %hCount--;
-                }
-                %index++;
-                continue;
-            }
-            %unitPosition = %unit.getPosition();
-            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
-            if (%clientCamLoc $= "")
-                continue;
-            %range = VectorDist( %clientCamLoc, %unitPosition );
-            if (%this.priorityRadius < %range)
-            {
-                %this.priorityGroup.remove(%unit);
-                %this.idleGroup.add(%unit);
-                %hCount--;
-                echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
-            }
-            %index++;
-        }
-        %hCount = %this.idleGroup.getCount();
-        %index = 0;
-        while (%index < %hCount)
-        {
-            %unit = %this.idleGroup.getObject(%index);
-            if (!isObject(%unit) || %unit.getState() $= "dead")
-            {
-                if (%this.idleGroup.isMember(%unit))
-                {
-                    %this.idleGroup.remove(%unit);
-                    %hCount--;
-                }
-                %index++;
-                continue;
-            }
-            %unitPosition = %unit.getPosition();
-            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
-            if (%clientCamLoc $= "")
-                continue;
-            %range = VectorDist( %clientCamLoc, %unitPosition );
-            if (%this.sleepRadius < %range)
-            {
-                %this.idleGroup.remove(%unit);
-                %this.sleepGroup.add(%unit);
-                %hCount--;
-                echo(" @@@ Moved " @ %unit @ " to sleep group : " @ %range);
-            }
-            if (%this.priorityRadius > %range && %unit.priority > 0)
-            {
-                %this.idleGroup.remove(%unit);
-                %this.priorityGroup.add(%unit);
-                %hCount--;
-                echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
-            }
-            %index++;
-        }
-        %hCount = %this.sleepGroup.getCount();
-        %index = 0;
-        while (%index < %hCount)
-        {
-            %unit = %this.sleepGroup.getObject(%index);
-            if (!isObject(%unit) || %unit.getState() $= "dead")
-            {
-                if (%this.sleepGroup.isMember(%unit))
-                {
-                    %this.sleepGroup.remove(%unit);
-                    %hCount--;
-                }
-                %index++;
-                continue;
-            }
-            %unitPosition = %unit.getPosition();
-            %clientCamLoc = %this.findNearestClientPosition(%unitPosition);
-            if (%clientCamLoc $= "")
-                continue;
-            %range = VectorDist( %clientCamLoc, %unitPosition );
-            if (%this.sleepRadius > %range)
-            {
-                %this.sleepGroup.remove(%unit);
-                %this.idleGroup.add(%unit);
-                %hCount--;
-                echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
-            }
-            %index++;
-        }
-    }
-    %this.schedule(500, "think");
+	%hCount = %this.priorityGroup.getCount();
+	%index = 0;
+	while (%index < %hCount)
+	{
+		%unit = %this.priorityGroup.getObject(%index);
+		if (!isObject(%unit) || %unit.getState() $= "dead")
+		{
+			if (%this.priorityGroup.isMember(%unit))
+			{
+				%this.priorityGroup.remove(%unit);
+				%hCount--;
+			}
+			%index++;
+			continue;
+		}
+		%unitPosition = %unit.getPosition();
+		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+		if (%clientCamLoc $= "")
+			continue;
+		%range = VectorDist( %clientCamLoc, %unitPosition );
+		if (%this.priorityRadius < %range)
+		{
+			%this.priorityGroup.remove(%unit);
+			%this.idleGroup.add(%unit);
+			%hCount--;
+			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
+		}
+		%index++;
+	}
+	%hCount = %this.idleGroup.getCount();
+	%index = 0;
+	while (%index < %hCount)
+	{
+		%unit = %this.idleGroup.getObject(%index);
+		if (!isObject(%unit) || %unit.getState() $= "dead")
+		{
+			if (%this.idleGroup.isMember(%unit))
+			{
+				%this.idleGroup.remove(%unit);
+				%hCount--;
+			}
+			%index++;
+			continue;
+		}
+		%unitPosition = %unit.getPosition();
+		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+		if (%clientCamLoc $= "")
+			continue;
+		%range = VectorDist( %clientCamLoc, %unitPosition );
+		if (%this.sleepRadius < %range)
+		{
+			%this.idleGroup.remove(%unit);
+			%this.sleepGroup.add(%unit);
+			%hCount--;
+			echo(" @@@ Moved " @ %unit @ " to sleep group : " @ %range);
+		}
+		if (%this.priorityRadius > %range && %unit.priority > 0)
+		{
+			%this.idleGroup.remove(%unit);
+			%this.priorityGroup.add(%unit);
+			%hCount--;
+			echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
+		}
+		%index++;
+	}
+	%hCount = %this.sleepGroup.getCount();
+	%index = 0;
+	while (%index < %hCount)
+	{
+		%unit = %this.sleepGroup.getObject(%index);
+		if (!isObject(%unit) || %unit.getState() $= "dead")
+		{
+			if (%this.sleepGroup.isMember(%unit))
+			{
+				%this.sleepGroup.remove(%unit);
+				%hCount--;
+			}
+			%index++;
+			continue;
+		}
+		%unitPosition = %unit.getPosition();
+		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
+		if (%clientCamLoc $= "")
+			continue;
+		%range = VectorDist( %clientCamLoc, %unitPosition );
+		if (%this.sleepRadius > %range)
+		{
+			%this.sleepGroup.remove(%unit);
+			%this.idleGroup.add(%unit);
+			%hCount--;
+			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
+		}
+		%index++;
+	}
+    %this.schedule(%this.thinkTime, "think");
 }
 
 /// <summary>

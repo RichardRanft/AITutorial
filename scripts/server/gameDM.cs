@@ -92,10 +92,10 @@ function DeathMatchGame::onClientEnterGame(%game, %client)
 
     %client.AIMan = new ScriptObject()
     {
-        class = AIManager;
+        class = AIClientManager;
     };
-    %client.AIMan.start(200, 1000, 75);
     %client.AIMan.client = %client;
+    %client.AIMan.start(500);
 }
 
 function DeathMatchGame::preparePlayer(%game, %client)
