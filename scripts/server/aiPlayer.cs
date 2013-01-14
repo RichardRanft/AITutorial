@@ -4,309 +4,6 @@
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-// AIPlayer callbacks
-// The AIPlayer class implements the following callbacks:
-//
-//    PlayerData::onStop(%this,%obj)
-//    PlayerData::onMove(%this,%obj)
-//    PlayerData::onReachDestination(%this,%obj)
-//    PlayerData::onMoveStuck(%this,%obj)
-//    PlayerData::onTargetEnterLOS(%this,%obj)
-//    PlayerData::onTargetExitLOS(%this,%obj)
-//    PlayerData::onAdd(%this,%obj)
-//
-// Since the AIPlayer doesn't implement it's own datablock, these callbacks
-// all take place in the PlayerData namespace.
-//-----------------------------------------------------------------------------
-function DefaultPlayerData::think(%this, %obj)
-{
-    if(%obj.getState() $= "dead")
-        return;
-    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
-    // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
-        return;
-
-    if (!isObject(%obj.target))
-    {
-        %target = %obj.getNearestTarget(100.0);
-        if (isObject(%target))
-        {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
-                %obj.target = %target;
-        }
-    }
-    if (!isObject(%obj.target))
-        %obj.target = %obj.findTargetInMissionGroup(25.0);
-
-    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
-    {
-        if (%canFire)
-            %obj.pushTask("attack" TAB %obj.target);
-
-        return;
-    }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
-    {
-        %obj.pushTask("fire" TAB false);
-        return;
-    }
-    %obj.pushTask("clearTarget");
-}
-
-function DefaultPlayerData::fire(%this, %obj)
-{
-    %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
-    {
-        cancel(%obj.trigger);
-        %obj.pushTask("clearTarget");
-        return;
-    }
-
-    %obj.aimOffset = 0;
-    %fireState = %obj.getImageTrigger(0);
-
-    if (!%fireState)
-        %obj.setImageTrigger(0, 1);
-
-    %obj.pushTask("checkTargetStatus");
-    %obj.nextTask();
-}
-
-//-----------------------------------------------------------------------------
-// Demo Pathed AIPlayer.
-//-----------------------------------------------------------------------------
-$AIPlayer::GrenadierRange = 40.0;
-$AIPlayer::GrenadeGravityModifier = 0.86;
-$AIPlayer::DefaultPriority = 1;
-
-function DemoPlayer::onReachDestination(%this,%obj)
-{
-   //echo( %obj @ " onReachDestination" );
-
-   // Moves to the next node on the path.
-   // Override for all player.  Normally we'd override this for only
-   // a specific player datablock or class of players.
-   if (%obj.path !$= "")
-   {
-      if (%obj.currentNode == %obj.targetNode)
-         %this.onEndOfPath(%obj,%obj.path);
-      else
-         %obj.moveToNextNode();
-   }
-}
-
-function DemoPlayer::onMoveStuck(%this,%obj)
-{
-   //echo( %obj @ " onMoveStuck" );
-}
-
-function DemoPlayer::onTargetExitLOS(%this,%obj)
-{
-}
-
-function DemoPlayer::onTargetEnterLOS(%this,%obj)
-{
-}
-
-function DemoPlayer::onEndOfPath(%this,%obj,%path)
-{
-   %obj.nextTask();
-}
-
-function DemoPlayer::onEndSequence(%this,%obj,%slot)
-{
-   echo("Sequence Done!");
-   %obj.stopThread(%slot);
-   %obj.nextTask();
-}
-
-function DemoPlayerData::fire(%this, %obj)
-{
-    %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
-    {
-        cancel(%obj.trigger);
-        %obj.pushTask("clearTarget");
-        return;
-    }
-
-    %obj.aimOffset = 0;
-
-    // Tell our AI object to fire its weapon
-    %obj.setImageTrigger(0, 1);
-    %obj.schedule(64, setImageTrigger, 0, 0);
-    if (%obj.target.getState() !$= "dead")
-        %obj.trigger = %this.schedule(%obj.shootingDelay, fire, %obj);
-    %obj.pushTask("checkTargetStatus");
-    %obj.nextTask();
-}
-
-function DemoPlayerData::think(%this, %obj)
-{
-    if(%obj.getState() $= "dead")
-        return;
-    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
-    // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
-        return;
-
-    if (!isObject(%obj.target))
-    {
-        %target = %obj.getNearestTarget(100.0);
-        if (isObject(%target))
-        {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
-                %obj.target = %target;
-        }
-    }
-    if (!isObject(%obj.target))
-        %obj.target = %obj.findTargetInMissionGroup(25.0);
-
-    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
-    {
-        if (%canFire)
-            %obj.pushTask("attack" TAB %obj.target);
-
-        return;
-    }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
-    {
-        %obj.pushTask("fire" TAB false);
-        return;
-    }
-    %obj.pushTask("clearTarget");
-}
-
-function AssaultUnitData::fire(%this, %obj)
-{
-    %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
-    {
-        cancel(%obj.trigger);
-        %obj.pushTask("clearTarget");
-        return;
-    }
-
-    %obj.aimOffset = 0;
-    %fireState = %obj.getImageTrigger(0);
-
-    if (!%fireState)
-        %obj.setImageTrigger(0, 1);
-
-    %obj.pushTask("checkTargetStatus");
-    %obj.nextTask();
-}
-
-function AssaultUnitData::think(%this, %obj)
-{
-    if(%obj.getState() $= "dead")
-        return;
-    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
-    // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
-        return;
-
-    if (!isObject(%obj.target))
-    {
-        %target = %obj.getNearestTarget(100.0);
-        if (isObject(%target))
-        {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
-                %obj.target = %target;
-        }
-    }
-    if (!isObject(%obj.target))
-        %obj.target = %obj.findTargetInMissionGroup(25.0);
-
-    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
-    {
-        if (%canFire)
-            %obj.pushTask("attack" TAB %obj.target);
-
-        return;
-    }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
-    {
-        %obj.pushTask("fire" TAB false);
-        return;
-    }
-    %obj.pushTask("clearTarget");
-}
-
-function GrenadierUnitData::fire(%this, %obj)
-{
-    %validTarget = isObject(%obj.target);
-    if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
-    {
-        cancel(%obj.trigger);
-        %obj.pushTask("clearTarget");
-        return;
-    }
-
-    // ok, here we need to calculate offset by figuring the angle that we need to aim
-    // upwards to reach our target and move closer if we can't reach.
-    %objWeapon = %obj.getMountedImage(0);
-    %velocity = %objWeapon.projectile.muzzleVelocity;
-    %range = %obj.getTargetDistance(%obj.target);
-    if (%range > $AIPlayer::GrenadierRange)
-        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, true, $AIPlayer::GrenadeGravityModifier);
-    else
-        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, false, $AIPlayer::GrenadeGravityModifier * 0.85);
-    if ( %offset == -1 )
-    {
-        %obj.schedule(32, pushTask, "closeOnTarget");
-        %obj.schedule(64, pushTask, "fire" TAB true);
-        return;
-    }
-
-    %obj.aimOffset = %offset;
-
-    // Tell our AI object to fire its weapon
-    %obj.setImageTrigger(0, 1);
-    %obj.schedule(64, setImageTrigger, 0, 0);
-    %obj.trigger = %obj.schedule(%obj.shootingDelay, pushTask, "checkTargetStatus");
-    %obj.nextTask();
-}
-
-function GrenadierUnitData::think(%this, %obj)
-{
-    if(%obj.getState() $= "dead")
-        return;
-    %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
-    // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
-        return;
-
-    if (!isObject(%obj.target))
-    {
-        %target = %obj.getNearestTarget(100.0);
-        if (isObject(%target))
-        {
-            if (%obj.seeTarget(%obj.getPosition(), %target.getPosition(), %obj.getAngleTo(%target.getPosition(), 80.0)))
-                %obj.target = %target;
-        }
-    }
-    if (!isObject(%obj.target))
-        %obj.target = %obj.findTargetInMissionGroup(25.0);
-
-    if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
-    {
-        if (%canFire)
-            %obj.pushTask("attack" TAB %obj.target);
-
-        return;
-    }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
-    {
-        %obj.pushTask("fire" TAB false);
-        return;
-    }
-    %obj.pushTask("clearTarget");
-}
-
-//-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
 
@@ -953,46 +650,10 @@ function AIPlayer::think(%this)
 }
 
 //-----------------------------------------------------------------------------
-// AI Manager system - coordinates groups of AI units
+// Client AI Manager system - coordinates groups of AI units
 //-----------------------------------------------------------------------------
-$AIManager::PriorityTime = 200;
-$AIManager::IdleTime = 1000;
-$AIManager::PriorityRadius = 75;
-$AIManager::SleepRadius = 250;
 
-if (!isObject(AIManager))
-    new ScriptObject(AIManager);
-
-/// <summary>
-/// This function starts an AIManager object.  The AIManager is to coordinate 
-/// AI unit processing to help conserve processing time.
-///
-/// Units within <priorityRadius> will have their "think" method called 
-/// every <priorityTime> milliseconds.  Units outside of <priorityRadius> but
-/// inside of <sleepRadius> will have their "think" method called every
-/// <idleTime> milliseconds.  Units outside of <sleepRadius> will not have their
-/// "think" method called at all.
-///
-/// Units can be assigned a priority number which will be used to help determine if
-/// that unit should ever sleep or if it ever needs priority timing.
-///
-/// Units with priority 2 or higher will never be put to "sleep."
-/// Units with priority 1 will be sorted normally.
-/// Units with priority 0 will never be processed faster than <idleTime>.
-///
-/// So, perhaps RTS combat units should be priority 2 so that they can always respond
-/// to approaching enemies even when far from the center of attention.  Then ambient 
-/// non-combatant or "decorative" units should have a priority of 1 or 0 depending on
-/// whether you want them to respond quickly to nearby events or not.  Really, this 
-/// would probably be more handy for RPG-light games where spawned units (vendors, guards)
-/// would need to be present but might not need to actually do anything while the players
-/// aren't in their immediate vicinity.
-/// </summary>
-/// <param name="priorityTime">The number of milliseconds between "think" calls for priority units.</param>
-/// <param name="idleTime">The number of milliseconds between "think" calls for idle units.</param>
-/// <param name="priorityRadius">The number of world units around any player camera within which units will be given priority timing.</param>
-/// <param name="sleepRadius">The number of world units around any player camera outside of which units will be suspended from thinking.</param>
-function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
+function AIClientManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sleepRadius)
 {
     MissionCleanup.add(%this);
     %this.priorityRadius = (%priorityRadius !$= "" ? %priorityRadius : $AIManager::PriorityRadius);
@@ -1021,7 +682,7 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sle
 }
 
 /// <summary>
-/// This function requests that the AIManager spawn a unit and add it to its group.
+/// This function requests that the AIClientManager spawn a unit and add it to its group.
 /// </summary>
 /// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
 /// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>
@@ -1029,7 +690,7 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sle
 /// <param name="priority">The priority of this unit. 0 to 2 from low to high priority.  Defaults to 1.</param>
 /// <param name="onPath">If spawnLocation is a path, this should be true to get the unit to spawn on and follow the path.</param>
 /// <return>Returns the new unit.</return>
-function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
+function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %priority, %onPath);
     %this.loadOutUnit(%newUnit, true);
@@ -1041,10 +702,10 @@ function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority,
 }
 
 /// <summary>
-/// This function handles sorting the AIManager's managed units by distance and
+/// This function handles sorting the AIClientManager's managed units by distance and
 /// priority.
 /// </summary>
-function AIManager::think(%this)
+function AIClientManager::think(%this)
 {
     // The purpose here is to reduce overhead from AI for units that are
     // farther "from the action."  So I'm using sorting units from one 
@@ -1156,7 +817,7 @@ function AIManager::think(%this)
 /// </summary>
 /// <param name="position">The position to test clients against.</param>
 /// <return>Returns the position of the client nearest to <position>.</return>
-function AIManager::findNearestClientPosition(%this, %position)
+function AIClientManager::findNearestClientPosition(%this, %position)
 {
     %clientCount = ClientGroup.getCount();
     %dist = 125000; // arbitrarily large starting distance
@@ -1182,7 +843,7 @@ function AIManager::findNearestClientPosition(%this, %position)
 /// This function processes unit.think() for all units in the high priority
 /// group every <priorityTime> milliseconds.
 /// </summary>
-function AIManager::priorityThink(%this)
+function AIClientManager::priorityThink(%this)
 {
     %count = %this.priorityGroup.getCount();
     %index = 0;
@@ -1199,7 +860,7 @@ function AIManager::priorityThink(%this)
 /// This function processes unit.think() for all units in the low priority 
 /// group every <idleTime> milliseconds.
 /// </summary>
-function AIManager::idleThink(%this)
+function AIClientManager::idleThink(%this)
 {
     %count = %this.idleGroup.getCount();
     %index = 0;
@@ -1221,7 +882,7 @@ function AIManager::idleThink(%this)
 /// <param name="priority">The priority of this unit. 0 to 2 from low to high priority.  Defaults to 1.</param>
 /// <param name="onPath">If spawnLocation is a path, this should be true to get the unit to spawn on and follow the path.</param>
 /// <return>Returns the new unit, or 0 on failure.</return>
-function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
+function AIClientManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     if (%onPath)
     {
@@ -1260,7 +921,7 @@ function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %
 /// </summary>
 /// <param name="unit">The unit to equip.</param>
 /// <param name="infiniteAmmo">If true, the weapon will not consume ammo.</param>
-function AIManager::loadOutUnit(%this, %unit, %infiniteAmmo)
+function AIClientManager::loadOutUnit(%this, %unit, %infiniteAmmo)
 {
     %unit.clearWeaponCycle();
     
