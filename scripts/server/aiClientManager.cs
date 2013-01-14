@@ -131,6 +131,33 @@ function AIClientManager::handleMessage(%this, %message)
     %message.delete();
 }
 
+function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
+{
+    %allyList = AIManager.findNearestUnit(%unit, %range);
+    %count = 1;
+    while (%count < %num)
+    {
+        %ally = AIManager.findNearestUnit(getField(%allyList, %count - 1), %range);
+        if(!isObject(%ally))
+            break;
+        %curNum = getFieldCount(%allyList);
+        %duplicate = false;
+        for (%i = 0; %i < %curNum; %i++)
+        {
+            if (%ally == getField(%allyList, %i))
+            {
+                %duplicate = true;
+                break;
+            }
+        }
+        if (%duplicate)
+            break;
+        %allyList = %allyList TAB %ally;
+        %count++;
+    }
+    return %allyList;
+}
+
 //-----------------------------------------------------------------------------
 // Message handlers
 //-----------------------------------------------------------------------------
@@ -164,19 +191,36 @@ function AIClientManager::underAttack(%this, %unit, %damage, %source)
 {
     // %source is most likely a projectile, but whatever it is it should carry a sourceObject
     // field on it that should hold the originating unit (the unit that fired the projectile).
-    echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage @ ":" @ %source @":"@%source.sourceObject);
+    //echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage @ ":" @ %source @":"@%source.sourceObject);
     if (%unit.getState() $= "dead")
         return;
-    %ally = AIManager.findNearestUnit(%unit, 250);
-    if (isObject(%ally) && %ally.getClassName() $= "AIPlayer" && %ally.getState() !$= "dead")
+    if (%source.sourceObject.team == %unit.team)
     {
-        %offsetX = getRandom(-10, 10);
-        %offsetY = getRandom(-10, 10);
-        %dest = %unit.getPosition();
-        %dest.x += %offsetX;
-        %dest.y += %offsetY;
-        %unit.pushTask("attack" TAB %source.sourceObject);
-        %ally.target = %source.sourceObject;
-        %ally.setMoveDestination(%dest);
+        echo(" @@@ Friendly Fire!");
+        return;
+    }
+    if (isEventPending(%unit.waitForHelp))
+        return;
+
+    %unit.waitForHelp = %unit.schedule(2000, think);
+
+    %allyList = %this.getNearestAllyList(%unit, 3, 250);
+    %allyCount = getFieldCount(%allyList);
+    if (%allyCount > 0)
+    {
+        for (%i = 0; %i < %allyCount; %i++)
+        {
+            %ally = getField(%allyList, %i);
+            if (!isObject(%ally))
+                continue;
+            %offsetX = getRandom(-20, 20);
+            %offsetY = getRandom(-20, 20);
+            %dest = %unit.getPosition();
+            %dest.x += %offsetX;
+            %dest.y += %offsetY;
+            %unit.pushTask("attack" TAB %source.sourceObject);
+            %ally.target = %source.sourceObject;
+            %ally.setMoveDestination(%dest);
+        }
     }
 }

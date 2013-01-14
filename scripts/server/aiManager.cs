@@ -226,6 +226,8 @@ function AIManager::findNearestClientPosition(%this, %position)
 /// <return>Returns the position of the client nearest to <position>.</return>
 function AIManager::findNearestUnit(%this, %unit, %radius)
 {
+    if(!isObject(%unit))
+        return;
     %position = %unit.getPosition();
 
     %dist = 125000; // arbitrarily large starting distance
