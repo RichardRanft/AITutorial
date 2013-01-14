@@ -125,7 +125,6 @@ function AIManager::think(%this)
 		{
 			%this.priorityGroup.remove(%unit);
 			%this.idleGroup.add(%unit);
-			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
 		}
 		%index--;
 	}
@@ -154,13 +153,11 @@ function AIManager::think(%this)
 		{
 			%this.idleGroup.remove(%unit);
 			%this.sleepGroup.add(%unit);
-			echo(" @@@ Moved " @ %unit @ " to sleep group : " @ %range);
 		}
 		if (%this.priorityRadius > %range && %unit.priority > 0)
 		{
 			%this.idleGroup.remove(%unit);
 			%this.priorityGroup.add(%unit);
-			echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
 		}
 		%index--;
 	}
@@ -189,7 +186,6 @@ function AIManager::think(%this)
 		{
 			%this.sleepGroup.remove(%unit);
 			%this.idleGroup.add(%unit);
-			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
 		}
 		%index--;
 	}
@@ -229,6 +225,49 @@ function AIManager::findNearestClientPosition(%this, %position)
 /// <param name="position">The position to test clients against.</param>
 /// <return>Returns the position of the client nearest to <position>.</return>
 function AIManager::findNearestUnit(%this, %unit, %radius)
+{
+    %position = %unit.getPosition();
+
+    %dist = 125000; // arbitrarily large starting distance
+    %priorityUnitCount = %this.priorityGroup.getCount();
+    for (%i = 0; %i < %priorityUnitCount; %i++)
+    {
+        %obj = %this.priorityGroup.getObject(%i);
+        if (isObject(%obj) && %obj != %unit && %obj.team == %unit.team)
+        {
+            %targetPos = %obj.getPosition();
+            %tempDist = VectorDist(%position, %targetPos);
+            if (%dist > %tempDist && %tempDist < %radius)
+            {
+                %dist = %tempDist;
+                %targetUnit = %obj;
+            }
+        }
+    }
+    %idleUnitCount = %this.idleGroup.getCount();
+    for (%i = 0; %i < %idleUnitCount; %i++)
+    {
+        %obj = %this.idleGroup.getObject(%i);
+        if (isObject(%obj) && %obj != %unit && %obj.team == %unit.team)
+        {
+            %targetPos = %obj.getPosition();
+            %tempDist = VectorDist(%position, %targetPos);
+            if (%dist > %tempDist && %tempDist < %radius)
+            {
+                %dist = %tempDist;
+                %targetUnit = %obj;
+            }
+        }
+    }
+    return (isObject(%targetUnit) ? %targetUnit : 0);
+}
+
+/// <summary>
+/// This function finds the nearest client to the position in question.
+/// </summary>
+/// <param name="position">The position to test clients against.</param>
+/// <return>Returns the position of the client nearest to <position>.</return>
+function AIManager::findNearestTarget(%this, %unit, %radius)
 {
     %position = %unit.getPosition();
 

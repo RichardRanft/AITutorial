@@ -217,6 +217,9 @@ function Armor::damage(%this, %obj, %sourceObject, %position, %damage, %damageTy
    // information in the onDamage or onDisable methods
    %client = %obj.client;
    %sourceClient = %sourceObject ? %sourceObject.client : 0;
+   
+   // Also, store the damage source for AI units
+   %obj.damageSourceObj = %sourceObject;
 
    if (isObject(%client))
    {

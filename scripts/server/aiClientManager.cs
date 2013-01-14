@@ -54,6 +54,7 @@ function AIClientManager::removeUnit(%this, %unit)
 {
     if (%this.unitList.isMember(%unit))
         %this.unitList.remove(%unit);
+    %unit.AIClientMan = "";
     %index = %this.messageQue.getCount() - 1;
     while(%index >= 0)
     {
@@ -112,7 +113,7 @@ function AIClientManager::handleMessage(%this, %message)
     %dataCount = getFieldCount(%message.message);
     if (%dataCount > 1)
     {
-        %i = %dataCount - 1;
+        %i = 2;
         while (%i < %dataCount)
         {
             if (%i == 2)
@@ -133,8 +134,49 @@ function AIClientManager::handleMessage(%this, %message)
 //-----------------------------------------------------------------------------
 // Message handlers
 //-----------------------------------------------------------------------------
+// Message handlers should be written with the unit as the first non-this parameter
+// and other parameters as needed.  See the standard message que handle caller:
+//
+// eval("%this."@%unitMessage@"("@%unit@", "@%data@");");
+//
+// So the message is the handler message to call, the unit is the orignator and 
+// data is assembled from additional fields passed in the message.
+//
+// A message is sent by an AI unit from it's datablock think method like so:
+//
+// %obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
+//
+// %obj is the unit.  It's AIClientManager is assigned to it when it is spawned in
+// AIClient::addUnit().  Wherever you send a message from you can use this to do it.
+// The message is a tab-delimited string that is expected to be compose as so:
+//
+// <sending unit> TAB <message name> TAB <tab-delimited handler parameters>
+//
+// At the moment messages are simply handled in the order received.
 
-function AIClientManager::underAttack(%this, %unit, %damage)
+/// <summary>
+/// A simple message to friendly units that %unit is under attack
+/// </summary>
+/// <param name="unit">The unit that sent the message.</param>
+/// <param name="damage"><unit>'s current damage level.</param>
+/// <param name="source">The object that damaged <unit>.</param>
+function AIClientManager::underAttack(%this, %unit, %damage, %source)
 {
-    echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage);
+    // %source is most likely a projectile, but whatever it is it should carry a sourceObject
+    // field on it that should hold the originating unit (the unit that fired the projectile).
+    echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage @ ":" @ %source @":"@%source.sourceObject);
+    if (%unit.getState() $= "dead")
+        return;
+    %ally = AIManager.findNearestUnit(%unit, 250);
+    if (isObject(%ally) && %ally.getClassName() $= "AIPlayer" && %ally.getState() !$= "dead")
+    {
+        %offsetX = getRandom(-10, 10);
+        %offsetY = getRandom(-10, 10);
+        %dest = %unit.getPosition();
+        %dest.x += %offsetX;
+        %dest.y += %offsetY;
+        %unit.pushTask("attack" TAB %source.sourceObject);
+        %ally.target = %source.sourceObject;
+        %ally.setMoveDestination(%dest);
+    }
 }

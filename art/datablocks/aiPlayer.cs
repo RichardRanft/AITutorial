@@ -54,7 +54,7 @@ function DefaultPlayerData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
-			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
@@ -188,7 +188,7 @@ function DemoPlayerData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
-			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
@@ -253,7 +253,7 @@ function AssaultUnitData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
-			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
@@ -333,7 +333,7 @@ function GrenadierUnitData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
-			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
+			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);

@@ -349,7 +349,7 @@ function AIPlayer::findTargetInMissionGroup(%this, %radius)
 /// <return>Returns the nearest non-team unit or a blank string if none are in range.</return>
 function AIPlayer::getNearestTarget(%this, %radius)
 {
-    %nearestTarget = AIManager.findNearestUnit(%this, %radius);
+    %nearestTarget = AIManager.findNearestTarget(%this, %radius);
     return %nearestTarget;
 }
 
