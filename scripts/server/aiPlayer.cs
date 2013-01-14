@@ -10,6 +10,7 @@
 function AIPlayer::removeFromTeam(%this)
 {
     %teamList = "Team"@%this.team@"List";
+    %this.AIClientMan.removeUnit(%this);
     if (%teamList.isMember(%this))
         %teamList.remove(%this);
 }
@@ -24,6 +25,7 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     %player.priority = (%priority !$= "" ? %priority : $AIPlayer::DefaultPriority);
 
     %player.shootingDelay = %datablock.shootingDelay;
+    %player.damageLvl = 0;
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
     if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
@@ -347,55 +349,7 @@ function AIPlayer::findTargetInMissionGroup(%this, %radius)
 /// <return>Returns the nearest non-team unit or a blank string if none are in range.</return>
 function AIPlayer::getNearestTarget(%this, %radius)
 {
-    %nearestTarget = "";
-    %team = %this.team;
-    %dist = %radius;
-    %botPos = %this.getPosition();
-    %count = ClientGroup.getCount();
-    for(%i = 0; %i < %count; %i++)
-    {
-        %client = ClientGroup.getObject(%i);
-        if (%client.team == %team)
-            continue;
-        %teamList =  "Team"@%client.team@"List";
-        if (!isObject(%teamList))
-            continue;
-        %teamCount = %teamList.getCount();
-        %teamIndex = 0;
-        while (%teamIndex < %teamCount)
-        {
-            %target = %teamList.getObject(%teamIndex);
-            %teamIndex++;
-            %playerPos = %target.getPosition();
-
-            %tempDist = VectorDist(%playerPos, %botPos);
-            if (%dist > %tempDist && %dist <= %radius)
-            {
-                %dist = %tempDist;
-                %nearestTarget = %target;
-            }
-        }
-    }
-    if (%team == 0)
-        return %nearestTarget;
-    %teamList =  "Team0List";
-    if (!isObject(%teamList))
-        return %nearestTarget;
-    %teamCount = %teamList.getCount();
-    %teamIndex = 0;
-    while (%teamIndex < %teamCount)
-    {
-        %target = %teamList.getObject(%teamIndex);
-        %teamIndex++;
-        %playerPos = %target.getPosition();
-
-        %tempDist = VectorDist(%playerPos, %botPos);
-        if (%dist > %tempDist && %dist < %radius)
-        {
-            %dist = %tempDist;
-            %nearestTarget = %target;
-        }
-    }
+    %nearestTarget = AIManager.findNearestUnit(%this, %radius);
     return %nearestTarget;
 }
 

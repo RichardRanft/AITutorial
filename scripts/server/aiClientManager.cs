@@ -4,6 +4,8 @@
 // This system should handle messages from units that belong to the client that
 // it is assigned to.
 $AIClientManager::ThinkTime = 500;
+if (!isObject(AIClientManager))
+    new ScriptObject(AIClientManager);
 
 function AIClientManager::start(%this, %thinkTime)
 {
@@ -14,6 +16,11 @@ function AIClientManager::start(%this, %thinkTime)
         %this.messageQue = new SimSet();
     else
         %this.messageQue.clear();
+
+    if (!isObject(%this.unitList))
+        %this.unitList = new SimSet();
+    else
+        %this.unitList.clear();
 
     %this.think();
 
@@ -37,43 +44,52 @@ function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %pri
 		return 0;
 	}
     %newUnit = AIManager.addUnit(%name, %spawnLocation, %datablock, %priority, %onPath);
-    %newUnit.team = %this.client;
+    %newUnit.team = (%this.client !$= "" ? %this.client : 0);
     %newUnit.AIClientMan = %this;
+    %this.unitList.add(%newUnit);
     return %newUnit;
 }
 
+function AIClientManager::removeUnit(%this, %unit)
+{
+    if (%this.unitList.isMember(%unit))
+        %this.unitList.remove(%unit);
+    %index = %this.messageQue.getCount() - 1;
+    while(%index >= 0)
+    {
+        %msg = %this.messageQue.getObject(%index);
+        %sender = getField(%msg.message, 0);
+        if (%sender == %unit)
+        {
+            %this.messageQue.remove(%msg);
+            %msg.delete();
+        }
+        %index--;
+    }
+}
+
 /// <summary>
-/// This function handles sorting the AIClientManager's managed units by distance and
-/// priority.
+/// This function handles messages from AI Units in the same team
 /// </summary>
 function AIClientManager::think(%this)
 {
-    // The purpose here is to reduce overhead from AI for units that are
-    // farther "from the action."  So I'm using sorting units from one 
-    // list to another based on the unit's distance from the nearest 
-    // player's camera, since any unit near any player's 
-    // camera needs to be "thinking" at the correct priority.
-    if (isObject(%this.client))
+    if (%this.client $= "0" || isObject(%this.client))
     {
-        %hCount = %this.messageQue.getCount();
-        %index = 0;
-        while (%index < %hCount)
+        %index = %this.messageQue.getCount() - 1;
+        while (%index >= 0)
         {
         	// message is no longer valid but somehow did not get cleaned up,
         	// so clean it up.
-            %mesage = %this.messageQue.getObject(%index);
+            %message = %this.messageQue.getObject(%index);
             if (!isObject(%message))
             {
-                if (%this.messageQue.isMember(%unit))
+                if (%this.messageQue.isMember(%message))
                 {
-                    %this.messageQue.remove(%unit);
-                    %hCount--;
+                    %this.messageQue.remove(%message);
                 }
-                %index++;
-                continue;
             }
-            echo(%message.message);
-            %index++;
+            %this.handleMessage(%message);
+            %index--;
         }
     }
     %this.schedule(%this.thinkTime, "think");
@@ -85,5 +101,40 @@ function AIClientManager::sendMessage(%this, %message)
         %this.messageQue = new SimSet();
     %msgObj = new ScriptObject();
     %msgObj.message = %message;
-    %this.messageQue.add(%task);
+    %this.messageQue.add(%msgObj);
+    %this.messageQue.bringToFront(%msgObj);
+}
+
+function AIClientManager::handleMessage(%this, %message)
+{
+    %unit = getField(%message.message, 0);
+    %unitMessage = getField(%message.message, 1);
+    %dataCount = getFieldCount(%message.message);
+    if (%dataCount > 1)
+    {
+        %i = %dataCount - 1;
+        while (%i < %dataCount)
+        {
+            if (%i == 2)
+                %data = getField(%message.message, %i);
+            else
+                %data = %data @ ", " @ getField(%message.message, %i);
+            %i++;
+        }
+    }
+    if (%this.isMethod(%unitMessage))
+    {
+        eval("%this."@%unitMessage@"("@%unit@", "@%data@");");
+    }
+    %this.messageQue.remove(%message);
+    %message.delete();
+}
+
+//-----------------------------------------------------------------------------
+// Message handlers
+//-----------------------------------------------------------------------------
+
+function AIClientManager::underAttack(%this, %unit, %damage)
+{
+    echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage);
 }

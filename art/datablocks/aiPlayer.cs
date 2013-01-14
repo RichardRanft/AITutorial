@@ -49,9 +49,9 @@ function DefaultPlayerData::think(%this, %obj)
         return;
 	
 	%damageLvl = %obj.getDamageLevel();
-	if (%damageLvl < %this.maxDamage)
+	if (%damageLvl > 0)
 	{
-		if (%damageLvl < %obj.damageLvl)
+		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
@@ -183,9 +183,9 @@ function DemoPlayerData::think(%this, %obj)
     if(%obj.getState() $= "dead")
         return;
 	%damageLvl = %obj.getDamageLevel();
-	if (%damageLvl < %this.maxDamage)
+	if (%damageLvl > 0)
 	{
-		if (%damageLvl < %obj.damageLvl)
+		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
@@ -248,9 +248,9 @@ function AssaultUnitData::think(%this, %obj)
     if(%obj.getState() $= "dead")
         return;
 	%damageLvl = %obj.getDamageLevel();
-	if (%damageLvl < %this.maxDamage)
+	if (%damageLvl > 0)
 	{
-		if (%damageLvl < %obj.damageLvl)
+		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);
@@ -328,9 +328,9 @@ function GrenadierUnitData::think(%this, %obj)
     if(%obj.getState() $= "dead")
         return;
 	%damageLvl = %obj.getDamageLevel();
-	if (%damageLvl < %this.maxDamage)
+	if (%damageLvl > 0)
 	{
-		if (%damageLvl < %obj.damageLvl)
+		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl);

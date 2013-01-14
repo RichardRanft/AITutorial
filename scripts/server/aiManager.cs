@@ -100,9 +100,8 @@ function AIManager::think(%this)
     // list to another based on the unit's distance from the nearest 
     // player's camera, since any unit near any player's 
     // camera needs to be "thinking" at the correct priority.
-	%hCount = %this.priorityGroup.getCount();
-	%index = 0;
-	while (%index < %hCount)
+	%index = %this.priorityGroup.getCount() - 1;
+	while (%index >= 0)
 	{
 		%unit = %this.priorityGroup.getObject(%index);
 		if (!isObject(%unit) || %unit.getState() $= "dead")
@@ -110,28 +109,28 @@ function AIManager::think(%this)
 			if (%this.priorityGroup.isMember(%unit))
 			{
 				%this.priorityGroup.remove(%unit);
-				%hCount--;
 			}
-			%index++;
+			%index--;
 			continue;
 		}
 		%unitPosition = %unit.getPosition();
 		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
 		if (%clientCamLoc $= "")
+		{
+		    %index--;
 			continue;
+		}
 		%range = VectorDist( %clientCamLoc, %unitPosition );
 		if (%this.priorityRadius < %range)
 		{
 			%this.priorityGroup.remove(%unit);
 			%this.idleGroup.add(%unit);
-			%hCount--;
 			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
 		}
-		%index++;
+		%index--;
 	}
-	%hCount = %this.idleGroup.getCount();
-	%index = 0;
-	while (%index < %hCount)
+	%index = %this.idleGroup.getCount() - 1;
+	while (%index >= 0)
 	{
 		%unit = %this.idleGroup.getObject(%index);
 		if (!isObject(%unit) || %unit.getState() $= "dead")
@@ -139,35 +138,34 @@ function AIManager::think(%this)
 			if (%this.idleGroup.isMember(%unit))
 			{
 				%this.idleGroup.remove(%unit);
-				%hCount--;
 			}
-			%index++;
+			%index--;
 			continue;
 		}
 		%unitPosition = %unit.getPosition();
 		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
 		if (%clientCamLoc $= "")
+		{
+            %index--;
 			continue;
+		}
 		%range = VectorDist( %clientCamLoc, %unitPosition );
 		if (%this.sleepRadius < %range)
 		{
 			%this.idleGroup.remove(%unit);
 			%this.sleepGroup.add(%unit);
-			%hCount--;
 			echo(" @@@ Moved " @ %unit @ " to sleep group : " @ %range);
 		}
 		if (%this.priorityRadius > %range && %unit.priority > 0)
 		{
 			%this.idleGroup.remove(%unit);
 			%this.priorityGroup.add(%unit);
-			%hCount--;
 			echo(" @@@ Moved " @ %unit @ " to priority group : " @ %range);
 		}
-		%index++;
+		%index--;
 	}
-	%hCount = %this.sleepGroup.getCount();
-	%index = 0;
-	while (%index < %hCount)
+	%index = %this.sleepGroup.getCount() - 1;
+	while (%index >= 0)
 	{
 		%unit = %this.sleepGroup.getObject(%index);
 		if (!isObject(%unit) || %unit.getState() $= "dead")
@@ -175,24 +173,25 @@ function AIManager::think(%this)
 			if (%this.sleepGroup.isMember(%unit))
 			{
 				%this.sleepGroup.remove(%unit);
-				%hCount--;
 			}
-			%index++;
+			%index--;
 			continue;
 		}
 		%unitPosition = %unit.getPosition();
 		%clientCamLoc = %this.findNearestClientPosition(%unitPosition);
 		if (%clientCamLoc $= "")
+		{
+		    %index--;
 			continue;
+		}
 		%range = VectorDist( %clientCamLoc, %unitPosition );
 		if (%this.sleepRadius > %range)
 		{
 			%this.sleepGroup.remove(%unit);
 			%this.idleGroup.add(%unit);
-			%hCount--;
 			echo(" @@@ Moved " @ %unit @ " to idle group : " @ %range);
 		}
-		%index++;
+		%index--;
 	}
     %this.schedule(%this.thinkTime, "think");
 }
@@ -225,6 +224,49 @@ function AIManager::findNearestClientPosition(%this, %position)
 }
 
 /// <summary>
+/// This function finds the nearest client to the position in question.
+/// </summary>
+/// <param name="position">The position to test clients against.</param>
+/// <return>Returns the position of the client nearest to <position>.</return>
+function AIManager::findNearestUnit(%this, %unit, %radius)
+{
+    %position = %unit.getPosition();
+
+    %dist = 125000; // arbitrarily large starting distance
+    %priorityUnitCount = %this.priorityGroup.getCount();
+    for (%i = 0; %i < %priorityUnitCount; %i++)
+    {
+        %obj = %this.priorityGroup.getObject(%i);
+        if (isObject(%obj) && %obj.team != %unit.team)
+        {
+            %targetPos = %obj.getPosition();
+            %tempDist = VectorDist(%position, %targetPos);
+            if (%dist > %tempDist && %tempDist < %radius)
+            {
+                %dist = %tempDist;
+                %targetUnit = %obj;
+            }
+        }
+    }
+    %idleUnitCount = %this.idleGroup.getCount();
+    for (%i = 0; %i < %idleUnitCount; %i++)
+    {
+        %obj = %this.idleGroup.getObject(%i);
+        if (isObject(%obj) && %obj.team != %unit.team)
+        {
+            %targetPos = %obj.getPosition();
+            %tempDist = VectorDist(%position, %targetPos);
+            if (%dist > %tempDist && %tempDist < %radius)
+            {
+                %dist = %tempDist;
+                %targetUnit = %obj;
+            }
+        }
+    }
+    return (isObject(%targetUnit) ? %targetUnit : 0);
+}
+
+/// <summary>
 /// This function processes unit.think() for all units in the high priority
 /// group every <priorityTime> milliseconds.
 /// </summary>
@@ -235,7 +277,9 @@ function AIManager::priorityThink(%this)
     while (%index < %count)
     {
         %unit = %this.priorityGroup.getObject(%index);
-        %unit.think();
+        %step = %this.priorityTime / %count;
+        %time = getRandom(32, (32 + (%index * %step)) );
+        %unit.schedule(%time, think);
         %index++;
     }
     %this.schedule(%this.priorityTime, "priorityThink");
@@ -252,7 +296,9 @@ function AIManager::idleThink(%this)
     while (%index < %count)
     {
         %unit = %this.idleGroup.getObject(%index);
-        %unit.think();
+        %step = %this.idleTime / %count;
+        %time = getRandom(32, (32 + (%index * %step)) );
+        %unit.schedule(%time, think);
         %index++;
     }
     %this.schedule(%this.idleTime, "idleThink");

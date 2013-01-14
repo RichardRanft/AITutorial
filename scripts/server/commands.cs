@@ -173,13 +173,10 @@ function serverCmdspawnBaddie(%client)
     // Create a new, generic AI Player
     // Position will be at the camera's location
     // Datablock will determine the type of actor
-    %enemy = AIManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData", 0);
-    %enemy.team = 0;
+    %enemy = AIClientManager.addUnit("", %client.camera.getTransform(), "DefaultPlayerData", 0);
     
     if (!isObject(Team0List))
         new SimSet(Team0List){};
-    //if ( !isObject (Team0List) )
-        //Team0List = new SimSet();
 
     Team0List.add(%enemy);
     MissionGroup.add(%enemy);
@@ -257,7 +254,7 @@ function serverCmdcheckTarget(%client, %pos, %start, %ray)
     {
         // Get the enemy ID
         %target = firstWord(%scanTarg);
-        if (%target.class $= "barracks")
+        if (%target.class $= "barracks" && %target.team == %client.team)
         {
             serverCmdspawnTeammate(%client, %target);
         }
@@ -363,6 +360,7 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
             collisionType = "Visible Mesh";
             scale = "0.5 0.5 0.5";
         };
+        %obj.team = %client.team;
 
         // Add the new object to the MissionCleanup group
         MissionCleanup.add(%obj);
