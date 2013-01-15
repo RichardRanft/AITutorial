@@ -133,18 +133,25 @@ function AIClientManager::handleMessage(%this, %message)
 
 function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
 {
-    %allyList = AIManager.findNearestUnit(%unit, %range);
+    %allyList = new SimSet();
+    %ally = AIManager.findNearestUnit(%unit, %range);
+    if (!isObject(%ally) || %ally == 0)
+    {
+        %allyList.delete();
+        return 0;
+    }
+    %allyList.add(%ally);
     %count = 1;
     while (%count < %num)
     {
-        %ally = AIManager.findNearestUnit(getField(%allyList, %count - 1), %range);
-        if(!isObject(%ally))
+        %ally = AIManager.findNearestUnit(%allyList.getObject(%count - 1), %range);
+        if(!isObject(%ally) || %ally == 0)
             break;
-        %curNum = getFieldCount(%allyList);
+        %curNum = %allyList.getCount();
         %duplicate = false;
         for (%i = 0; %i < %curNum; %i++)
         {
-            if (%ally == getField(%allyList, %i))
+            if (%ally == %allyList.getObject(%i))
             {
                 %duplicate = true;
                 break;
@@ -152,7 +159,7 @@ function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
         }
         if (%duplicate)
             break;
-        %allyList = %allyList TAB %ally;
+        %allyList.add(%ally);
         %count++;
     }
     return %allyList;
@@ -205,21 +212,25 @@ function AIClientManager::underAttack(%this, %unit, %damage, %source)
     %unit.waitForHelp = %unit.schedule(2000, think);
 
     %allyList = %this.getNearestAllyList(%unit, 3, 250);
-    %allyCount = getFieldCount(%allyList);
-    if (%allyCount > 0)
+    if(isObject(%allyList))
     {
-        for (%i = 0; %i < %allyCount; %i++)
+        %allyCount = %allyList.getCount();
+        if (%allyCount > 0)
         {
-            %ally = getField(%allyList, %i);
-            if (!isObject(%ally))
-                continue;
-            %offsetX = getRandom(-20, 20);
-            %offsetY = getRandom(-20, 20);
-            %dest = %unit.getPosition();
-            %dest.x += %offsetX;
-            %dest.y += %offsetY;
-            %ally.target = %source.sourceObject;
-            %ally.setMoveDestination(%dest);
+            for (%i = 0; %i < %allyCount; %i++)
+            {
+                %ally = %allyList.getObject(%i);
+                if (!isObject(%ally))
+                    continue;
+                %offsetX = getRandom(-20, 20);
+                %offsetY = getRandom(-20, 20);
+                %dest = %unit.getPosition();
+                %dest.x += %offsetX;
+                %dest.y += %offsetY;
+                %ally.target = %source.sourceObject;
+                %ally.setMoveDestination(%dest);
+            }
         }
+        %allyList.delete();
     }
 }

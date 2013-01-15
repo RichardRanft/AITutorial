@@ -490,9 +490,9 @@ function AmmoClip::onPickup(%this, %obj, %shape, %amount)
             %amountInClips = %shape.getInventory(%image.clip);
             
          %amountInClips *= %image.ammo.maxInventory;
-         %amountInClips += %obj.getFieldValue( "remaining" @ %this.ammo.getName() );
+         %amountInClips += %shape.getFieldValue( "remaining" @ %image.ammo.getName() );
          
-         %shape.client.setAmmoAmountHud(%currentAmmo, %amountInClips );
+         //%shape.client.setAmmoAmountHud(%currentAmmo, %amountInClips );
          
          if (%outOfAmmo)
          {

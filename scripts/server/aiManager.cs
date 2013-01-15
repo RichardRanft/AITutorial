@@ -319,7 +319,7 @@ function AIManager::priorityThink(%this)
     {
         %unit = %this.priorityGroup.getObject(%index);
         %step = %this.priorityTime / %count;
-        %time = getRandom(32, (32 + (%index * %step)) );
+        %time = 32 + (%index * %step);
         %unit.schedule(%time, think);
         %index++;
     }
@@ -338,7 +338,7 @@ function AIManager::idleThink(%this)
     {
         %unit = %this.idleGroup.getObject(%index);
         %step = %this.idleTime / %count;
-        %time = getRandom(32, (32 + (%index * %step)) );
+        %time = 32 + (%index * %step);
         %unit.schedule(%time, think);
         %index++;
     }

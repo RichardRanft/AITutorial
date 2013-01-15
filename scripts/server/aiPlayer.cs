@@ -415,6 +415,8 @@ function AIPlayer::pushTask(%this, %method)
 /// </summary>
 function AIPlayer::clearTasks(%this)
 {
+    if (!isObject(%this.taskList))
+        %this.taskList = new SimSet();
     if (isObject(%this.taskList))
         %this.taskList.clear();
     else
@@ -426,6 +428,8 @@ function AIPlayer::clearTasks(%this)
 /// </summary>
 function AIPlayer::nextTask(%this)
 {
+    if (!isObject(%this.taskList))
+        %this.taskList = new SimSet();
     %this.executeTask();
 }
 
@@ -436,6 +440,8 @@ function AIPlayer::nextTask(%this)
 /// </summary>
 function AIPlayer::executeTask(%this)
 {
+    if (!isObject(%this.taskList))
+        %this.taskList = new SimSet();
     %taskCount = %this.taskList.getCount();
     if (%taskCount > 0)
     {

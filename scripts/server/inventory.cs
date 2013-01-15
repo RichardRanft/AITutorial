@@ -170,8 +170,11 @@ function ShapeBase::decInventory(%this, %data, %amount)
 
 function ShapeBase::getInventory(%this, %data)
 {
-   // Return the current inventory amount
-   return %this.inv[%data.getName()];
+    // Return the current inventory amount
+    if (isObject(%data))
+        return %this.inv[%data.getName()];
+    else
+        return 0;
 }
 
 function ShapeBase::setInventory(%this, %data, %value)
