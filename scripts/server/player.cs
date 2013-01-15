@@ -282,8 +282,10 @@ function Armor::onDisabled(%this, %obj, %state)
    commandToClient(%obj.client, 'toggleVehicleMap', false);
 
    // Schedule corpse removal. Just keeping the place clean.
-   %obj.schedule($CorpseTimeoutValue - 1000, "startFade", 1000, 0, true);
-   %obj.schedule($CorpseTimeoutValue, "delete");
+   %dbCorpseTimeOut = %obj.getDatablock().corpseFadeTime;
+   %corpseTimeOut = (%dbCorpseTimeOut > 0 ? %dbCorpseTimeOut : $CorpseTimeoutValue);
+   %obj.schedule(%corpseTimeOut - 1000, "startFade", 1000, 0, true);
+   %obj.schedule(%corpseTimeOut, "delete");
    %obj.removeFromTeam();
 }
 

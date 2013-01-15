@@ -16,9 +16,10 @@
 
 datablock PlayerData(DemoPlayerData : DefaultPlayerData)
 {
-   shapeFile = "~/shapes/actors/boombot/boombot.dts";
-   shootingDelay = 1000;
-   mainWeapon = "Ryder";
+    shapeFile = "~/shapes/actors/boombot/boombot.dts";
+    shootingDelay = 1000;
+    corpseFadeTime = 2000;
+    mainWeapon = "Ryder";
 };
 
 // ----------------------------------------------------------------------------

@@ -133,34 +133,58 @@ function AIClientManager::handleMessage(%this, %message)
 
 function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
 {
-    %allyList = new SimSet();
-    %ally = AIManager.findNearestUnit(%unit, %range);
-    if (!isObject(%ally) || %ally == 0)
+    %ally = %this.unitList.getObject(0);
+    if (!isObject(%ally) || %ally == 0 || %ally.getState() $= "dead")
     {
-        %allyList.delete();
         return 0;
     }
-    %allyList.add(%ally);
+    
+    %allyList = new SimSet();
+    %totalAllies = %this.unitList.getCount();
     %count = %allyList.getCount();
+    if (%num > %totalAllies - 1)
+        %num = %totalAllies - 1;
+    %index = 1;
+    %unitPos = %unit.getPosition();
+    %dist = %range + 1;
     while (%count < %num)
     {
-        %ally = AIManager.findNearestUnit(%allyList.getObject(%count - 1), %range);
-        if(!isObject(%ally) || %ally == 0)
+        %totalAllies = %this.unitList.getCount();
+        if (%index >= %totalAllies)
             break;
-        %curNum = %allyList.getCount();
-        %duplicate = false;
-        for (%i = 0; %i < %curNum; %i++)
+        if (!isObject(%ally) || %ally == 0 || %ally == %unit || %ally.getState() $= "dead")
         {
-            if (%ally == %allyList.getObject(%i))
+            %ally = %this.unitList.getObject(%index);
+            %count = %allyList.getCount();
+            %index++;
+            continue;
+        }
+        %allyPos = %ally.getPosition();
+        %allyDist = VectorDist(%allyPos, %unitPos);
+        if (%allyDist > %range)
+        {
+            %index++;
+            continue;
+        }
+        if (%dist > %tempDist)
+        {
+            %dist = %tempDist;
+            %ally.dist = %dist;
+            %allyList.add(%ally);
+            %currCount = %allyList.getCount();
+            for (%i = 0; %i < %currCount; %i++)
             {
-                %duplicate = true;
-                break;
+                %obj = %allyList.getObject(%i);
+                if (%obj.dist > %dist && %currCount > %num)
+                {
+                    %allyList.remove(%obj);
+                    %currCount--;
+                }
             }
         }
-        if (%duplicate)
-            break;
-        %allyList.add(%ally);
-        %count++;
+        %ally = %this.unitList.getObject(%index);
+        %count = %allyList.getCount();
+        %index++;
     }
     return %allyList;
 }

@@ -16,9 +16,10 @@
 
 datablock PlayerData(AssaultUnitData : DefaultPlayerData)
 {
-   shapeFile = "~/shapes/actors/boombot/boombot.dts";
-   shootingDelay = 500;
-   mainWeapon = "Lurker";
+    shapeFile = "~/shapes/actors/boombot/boombot.dts";
+    shootingDelay = 500;
+    corpseFadeTime = 2000;
+    mainWeapon = "Lurker";
 };
 
 // ----------------------------------------------------------------------------

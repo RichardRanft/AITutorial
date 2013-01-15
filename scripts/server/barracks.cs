@@ -14,7 +14,7 @@ function BarracksTrigger::onEnterTrigger(%this,%trigger,%obj)
         serverPlay3D(HealthUseSound, %trigger.owner.getTransform());
     }
     %x = getRandom(-10, 10);
-    %y = getRandom(4, 10);
+    %y = getRandom(6, 12);
     %vec = %x SPC %y SPC "0";
 
     %obj.setMoveDestination(VectorAdd(%trigger.position, %vec));

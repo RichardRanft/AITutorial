@@ -46,7 +46,7 @@ function AIPlayer::ReachDestination(%this)
             %y = getRandom(-5, 5);
             %vec = %x SPC %y SPC "0";
 
-            %this.setMoveDestination(VectorAdd(%trigger.position, %vec));
+            %this.setMoveDestination(VectorAdd(%this.getPosition(), %vec));
         }
         else
             %this.destReached = false;
