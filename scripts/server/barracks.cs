@@ -5,7 +5,7 @@ function BarracksTrigger::onEnterTrigger(%this,%trigger,%obj)
     %damageLevel = %obj.getDamageLevel();
     %maxDamage = %obj.getDatablock().maxDamage;
     %state = %obj.getState();
-    echo(" @@@ " @ %obj @ " : " @ %maxDamage @"/"@ %damageLevel@" : " @ %state);
+    //echo(" @@@ " @ %obj @ " : " @ %maxDamage @"/"@ %damageLevel@" : " @ %state);
     AIManager.loadOutUnit(%obj);
     if (%damageLevel != 0 && %state !$= "Dead" && %obj.team == %trigger.owner.team)
     {
