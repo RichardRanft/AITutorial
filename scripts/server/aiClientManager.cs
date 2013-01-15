@@ -141,7 +141,7 @@ function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
         return 0;
     }
     %allyList.add(%ally);
-    %count = 1;
+    %count = %allyList.getCount();
     while (%count < %num)
     {
         %ally = AIManager.findNearestUnit(%allyList.getObject(%count - 1), %range);

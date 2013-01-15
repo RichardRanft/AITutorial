@@ -14,47 +14,39 @@
 // all take place in the PlayerData namespace.
 //-----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// These call AIPlayer methods that provide common versions.  For custom
+// behavior just provide the callback script here instead.
+// ----------------------------------------------------------------------------
+
 function DefaultPlayerData::onReachDestination(%this,%obj)
 {
-   //echo( %obj @ " onReachDestination" );
-
-   // Moves to the next node on the path.
-   // Override for all player.  Normally we'd override this for only
-   // a specific player datablock or class of players.
-   if (%obj.path !$= "")
-   {
-      if (%obj.currentNode == %obj.targetNode)
-         %this.onEndOfPath(%obj,%obj.path);
-      else
-         %obj.moveToNextNode();
-   }
-   else
-   	%obj.nextTask();
+    %obj.ReachDestination();
 }
 
 function DefaultPlayerData::onMoveStuck(%this,%obj)
 {
-   //echo( %obj @ " onMoveStuck" );
+   %obj.MoveStuck();
 }
 
 function DefaultPlayerData::onTargetExitLOS(%this,%obj)
 {
+    %obj.TargetExitLOS();
 }
 
 function DefaultPlayerData::onTargetEnterLOS(%this,%obj)
 {
+    %obj.TargetEnterLOS();
 }
 
 function DefaultPlayerData::onEndOfPath(%this,%obj,%path)
 {
-   %obj.nextTask();
+   %obj.EndOfPath(%path);
 }
 
 function DefaultPlayerData::onEndSequence(%this,%obj,%slot)
 {
-   echo("Sequence Done!");
-   %obj.stopThread(%slot);
-   %obj.nextTask();
+    %obj.EndSequence(%slot);
 }
 
 function DefaultPlayerData::think(%this, %obj)

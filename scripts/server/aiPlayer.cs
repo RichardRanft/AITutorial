@@ -4,6 +4,83 @@
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
+// AIPlayer default overrides for datablock callbacks
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// AIPlayer callbacks
+// The AIPlayer class implements the following callbacks:
+//
+//    PlayerData::onStop(%this,%obj)
+//    PlayerData::onMove(%this,%obj)
+//    PlayerData::onReachDestination(%this,%obj)
+//    PlayerData::onMoveStuck(%this,%obj)
+//    PlayerData::onTargetEnterLOS(%this,%obj)
+//    PlayerData::onTargetExitLOS(%this,%obj)
+//    PlayerData::onAdd(%this,%obj)
+//
+// Since the AIPlayer doesn't implement it's own datablock, these callbacks
+// all take place in the PlayerData namespace.  Below are implemented standard 
+// versions of these callbacks so that the datablock callbacks have a common 
+// fallback.
+//-----------------------------------------------------------------------------
+
+function AIPlayer::ReachDestination(%this)
+{
+    // Moves to the next node on the path.
+    // Override for all player.  Normally we'd override this for only
+    // a specific player datablock or class of players.
+    if (%this.path !$= "")
+    {
+        if (%this.currentNode == %this.targetNode)
+            %this.onEndOfPath(%this,%this.path);
+        else
+            %this.moveToNextNode();
+    }
+    else
+    {
+        if (!%this.destReached)
+        {
+            %this.destReached = true;
+            %x = getRandom(-5, 5);
+            %y = getRandom(-5, 5);
+            %vec = %x SPC %y SPC "0";
+
+            %this.setMoveDestination(VectorAdd(%trigger.position, %vec));
+        }
+        else
+            %this.destReached = false;
+
+        %this.nextTask();
+    }
+}
+
+function AIPlayer::MoveStuck(%this)
+{
+   //echo( %obj @ " onMoveStuck" );
+}
+
+function AIPlayer::TargetExitLOS(%this)
+{
+}
+
+function AIPlayer::TargetEnterLOS(%this)
+{
+}
+
+function AIPlayer::EndOfPath(%this,%path)
+{
+   %this.nextTask();
+}
+
+function AIPlayer::EndSequence(%this,%slot)
+{
+   echo("Sequence Done!");
+   %this.stopThread(%slot);
+   %this.nextTask();
+}
+
+//-----------------------------------------------------------------------------
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
 

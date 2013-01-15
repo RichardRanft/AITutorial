@@ -21,47 +21,39 @@ datablock PlayerData(AssaultUnitData : DefaultPlayerData)
    mainWeapon = "Lurker";
 };
 
+// ----------------------------------------------------------------------------
+// These call AIPlayer methods that provide common versions.  For custom
+// behavior just provide the callback script here instead.
+// ----------------------------------------------------------------------------
+
 function AssaultUnitData::onReachDestination(%this,%obj)
 {
-   //echo( %obj @ " onReachDestination" );
-
-   // Moves to the next node on the path.
-   // Override for all player.  Normally we'd override this for only
-   // a specific player datablock or class of players.
-   if (%obj.path !$= "")
-   {
-      if (%obj.currentNode == %obj.targetNode)
-         %this.onEndOfPath(%obj,%obj.path);
-      else
-         %obj.moveToNextNode();
-   }
-   else
-   	%obj.nextTask();
+    %obj.ReachDestination();
 }
 
 function AssaultUnitData::onMoveStuck(%this,%obj)
 {
-   //echo( %obj @ " onMoveStuck" );
+    %obj.MoveStuck();
 }
 
 function AssaultUnitData::onTargetExitLOS(%this,%obj)
 {
+    %obj.TargetExitLOS();
 }
 
 function AssaultUnitData::onTargetEnterLOS(%this,%obj)
 {
+    %obj.TargetEnterLOS();
 }
 
 function AssaultUnitData::onEndOfPath(%this,%obj,%path)
 {
-   %obj.nextTask();
+   %obj.EndOfPath(%path);
 }
 
 function AssaultUnitData::onEndSequence(%this,%obj,%slot)
 {
-   echo("Sequence Done!");
-   %obj.stopThread(%slot);
-   %obj.nextTask();
+    %obj.EndSequence(%slot);
 }
 
 function AssaultUnitData::fire(%this, %obj)

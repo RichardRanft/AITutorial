@@ -21,45 +21,39 @@ datablock PlayerData(DemoPlayerData : DefaultPlayerData)
    mainWeapon = "Ryder";
 };
 
+// ----------------------------------------------------------------------------
+// These call AIPlayer methods that provide common versions.  For custom
+// behavior just provide the callback script here instead.
+// ----------------------------------------------------------------------------
+
 function DemoPlayer::onReachDestination(%this,%obj)
 {
-   //echo( %obj @ " onReachDestination" );
-
-   // Moves to the next node on the path.
-   // Override for all player.  Normally we'd override this for only
-   // a specific player datablock or class of players.
-   if (%obj.path !$= "")
-   {
-      if (%obj.currentNode == %obj.targetNode)
-         %this.onEndOfPath(%obj,%obj.path);
-      else
-         %obj.moveToNextNode();
-   }
+    %obj.ReachDestination();
 }
 
 function DemoPlayer::onMoveStuck(%this,%obj)
 {
-   //echo( %obj @ " onMoveStuck" );
+    %obj.MoveStuch();
 }
 
 function DemoPlayer::onTargetExitLOS(%this,%obj)
 {
+    %obj.TargetExitLOS();
 }
 
 function DemoPlayer::onTargetEnterLOS(%this,%obj)
 {
+    %obj.TargetEnterLOS();
 }
 
 function DemoPlayer::onEndOfPath(%this,%obj,%path)
 {
-   %obj.nextTask();
+    %obj.EndOfPath(%path);
 }
 
 function DemoPlayer::onEndSequence(%this,%obj,%slot)
 {
-   echo("Sequence Done!");
-   %obj.stopThread(%slot);
-   %obj.nextTask();
+    %obj.EndSequence(%slot);
 }
 
 function DemoPlayerData::fire(%this, %obj)

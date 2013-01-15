@@ -21,47 +21,39 @@ datablock PlayerData(GrenadierUnitData : DefaultPlayerData)
    mainWeapon = "LurkerGrenadeLauncher";
 };
 
+// ----------------------------------------------------------------------------
+// These call AIPlayer methods that provide common versions.  For custom
+// behavior just provide the callback script here instead.
+// ----------------------------------------------------------------------------
+
 function GrenadierUnitData::onReachDestination(%this,%obj)
 {
-   //echo( %obj @ " onReachDestination" );
-
-   // Moves to the next node on the path.
-   // Override for all player.  Normally we'd override this for only
-   // a specific player datablock or class of players.
-   if (%obj.path !$= "")
-   {
-      if (%obj.currentNode == %obj.targetNode)
-         %this.onEndOfPath(%obj,%obj.path);
-      else
-         %obj.moveToNextNode();
-   }
-   else
-   	%obj.nextTask();
+    %obj.ReachDestination();
 }
 
 function GrenadierUnitData::onMoveStuck(%this,%obj)
 {
-   //echo( %obj @ " onMoveStuck" );
+   %obj.MoveStuck();
 }
 
 function GrenadierUnitData::onTargetExitLOS(%this,%obj)
 {
+    %obj.TargetExitLOS();
 }
 
 function GrenadierUnitData::onTargetEnterLOS(%this,%obj)
 {
+    %obj.TargetEnterLOS();
 }
 
 function GrenadierUnitData::onEndOfPath(%this,%obj,%path)
 {
-   %obj.nextTask();
+   %obj.EndOfPath(%path);
 }
 
 function GrenadierUnitData::onEndSequence(%this,%obj,%slot)
 {
-   echo("Sequence Done!");
-   %obj.stopThread(%slot);
-   %obj.nextTask();
+    %obj.EndSequence(%slot);
 }
 
 function GrenadierUnitData::fire(%this, %obj)
