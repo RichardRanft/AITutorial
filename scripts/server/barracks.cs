@@ -1,18 +1,19 @@
 function BarracksTrigger::onEnterTrigger(%this,%trigger,%obj)
 {
-    echo(" @@@ " @ %obj @ " Entered trigger " @ %trigger.getName());
     // Apply health to colliding object if it needs it.
     // Works for all shapebase objects.
-    if (%obj.getDamageLevel() != 0 && %obj.getState() !$= "Dead" && %obj.team == %this.owner.team)
+    %damageLevel = %obj.getDamageLevel();
+    %maxDamage = %obj.getDatablock().maxDamage;
+    %state = %obj.getState();
+    echo(" @@@ " @ %obj @ " : " @ %maxDamage @"/"@ %damageLevel@" : " @ %state);
+    AIManager.loadOutUnit(%obj);
+    if (%damageLevel != 0 && %state !$= "Dead" && %obj.team == %trigger.owner.team)
     {
-        %obj.applyRepair(%obj.getDatablock().maxDamage);
+        %obj.applyRepair(%maxDamage - %damageLevel);
 
-        // Update the Health GUI while repairing
-        %this.doHealthUpdate(%obj);
-        AIManager.loadOutUnit(%obj);
-        %obj.setMoveDestination(VectorAdd(%this.position, "0 5 0"));
-
-        serverPlay3D(HealthUseSound, %this.owner.getTransform());
-        %obj.nextTask();
+        serverPlay3D(HealthUseSound, %trigger.owner.getTransform());
     }
+    %obj.setMoveDestination(VectorAdd(%trigger.position, "0 15 0"));
+
+    %obj.nextTask();
 }

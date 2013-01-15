@@ -360,7 +360,7 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
             collisionType = "Visible Mesh";
             scale = "0.5 0.5 0.5";
         };
-        %obj.team = %client.team;
+        %obj.team = %client.getId();
 
         // Add the new object to the MissionCleanup group
         MissionCleanup.add(%obj);
@@ -399,7 +399,7 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
         %pos = %obj.getPosition();
         %scalex = (getWord(%box, 3) - getWord(%box, 0)) * 1.2;
         %scaley = (getWord(%box, 4) - getWord(%box, 1)) * 1.2;
-        %scalez = (getWord(%box, 5) - getWord(%box, 2)) * 1.2;
+        %scalez = (getWord(%box, 5) - getWord(%box, 2)) * 10.0;
         %scale = %scalex SPC %scaley SPC %scalez;
         %trigger = new Trigger(%triggerName)
         {

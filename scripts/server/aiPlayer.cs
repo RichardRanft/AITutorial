@@ -542,7 +542,10 @@ function AIPlayer::findHealthKit(%this)
     initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::ItemObjectType);
     %obj = containerSearchNext();
     if (!isObject(%obj) || %obj $= "")
+    {
         %this.nextTask();
+        return 0;
+    }
     while (isObject(%obj) && %obj.getDatablock().getName() !$= "HealthKitPatch")
     {
         %obj = containerSearchNext();
@@ -575,7 +578,10 @@ function AIPlayer::findAmmoDrop(%this)
     %clipType = %weapon.clip;
     %obj = containerSearchNext();
     if (!isObject(%obj) || %obj $= "")
+    {
         %this.nextTask();
+        return 0;
+    }
     %datablock = %obj.getDatablock().getName();
     while (isObject(%obj) && (%datablock !$= %ammoType && %datablock !$= %clipType))
     {
