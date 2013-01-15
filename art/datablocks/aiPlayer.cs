@@ -43,6 +43,49 @@ datablock PlayerData(GrenadierUnitData : DefaultPlayerData)
 // Since the AIPlayer doesn't implement it's own datablock, these callbacks
 // all take place in the PlayerData namespace.
 //-----------------------------------------------------------------------------
+function DefaultPlayerData::onReachDestination(%this,%obj)
+{
+   //echo( %obj @ " onReachDestination" );
+
+   // Moves to the next node on the path.
+   // Override for all player.  Normally we'd override this for only
+   // a specific player datablock or class of players.
+   if (%obj.path !$= "")
+   {
+      if (%obj.currentNode == %obj.targetNode)
+         %this.onEndOfPath(%obj,%obj.path);
+      else
+         %obj.moveToNextNode();
+   }
+   else
+   	%obj.nextTask();
+}
+
+function DefaultPlayerData::onMoveStuck(%this,%obj)
+{
+   //echo( %obj @ " onMoveStuck" );
+}
+
+function DefaultPlayerData::onTargetExitLOS(%this,%obj)
+{
+}
+
+function DefaultPlayerData::onTargetEnterLOS(%this,%obj)
+{
+}
+
+function DefaultPlayerData::onEndOfPath(%this,%obj,%path)
+{
+   %obj.nextTask();
+}
+
+function DefaultPlayerData::onEndSequence(%this,%obj,%slot)
+{
+   echo("Sequence Done!");
+   %obj.stopThread(%slot);
+   %obj.nextTask();
+}
+
 function DefaultPlayerData::think(%this, %obj)
 {
     if(%obj.getState() $= "dead")
@@ -225,6 +268,49 @@ function DemoPlayerData::think(%this, %obj)
     %obj.pushTask("clearTarget");
 }
 
+function AssaultUnitData::onReachDestination(%this,%obj)
+{
+   //echo( %obj @ " onReachDestination" );
+
+   // Moves to the next node on the path.
+   // Override for all player.  Normally we'd override this for only
+   // a specific player datablock or class of players.
+   if (%obj.path !$= "")
+   {
+      if (%obj.currentNode == %obj.targetNode)
+         %this.onEndOfPath(%obj,%obj.path);
+      else
+         %obj.moveToNextNode();
+   }
+   else
+   	%obj.nextTask();
+}
+
+function AssaultUnitData::onMoveStuck(%this,%obj)
+{
+   //echo( %obj @ " onMoveStuck" );
+}
+
+function AssaultUnitData::onTargetExitLOS(%this,%obj)
+{
+}
+
+function AssaultUnitData::onTargetEnterLOS(%this,%obj)
+{
+}
+
+function AssaultUnitData::onEndOfPath(%this,%obj,%path)
+{
+   %obj.nextTask();
+}
+
+function AssaultUnitData::onEndSequence(%this,%obj,%slot)
+{
+   echo("Sequence Done!");
+   %obj.stopThread(%slot);
+   %obj.nextTask();
+}
+
 function AssaultUnitData::fire(%this, %obj)
 {
     %validTarget = isObject(%obj.target);
@@ -289,6 +375,49 @@ function AssaultUnitData::think(%this, %obj)
         return;
     }
     %obj.pushTask("clearTarget");
+}
+
+function GrenadierUnitData::onReachDestination(%this,%obj)
+{
+   //echo( %obj @ " onReachDestination" );
+
+   // Moves to the next node on the path.
+   // Override for all player.  Normally we'd override this for only
+   // a specific player datablock or class of players.
+   if (%obj.path !$= "")
+   {
+      if (%obj.currentNode == %obj.targetNode)
+         %this.onEndOfPath(%obj,%obj.path);
+      else
+         %obj.moveToNextNode();
+   }
+   else
+   	%obj.nextTask();
+}
+
+function GrenadierUnitData::onMoveStuck(%this,%obj)
+{
+   //echo( %obj @ " onMoveStuck" );
+}
+
+function GrenadierUnitData::onTargetExitLOS(%this,%obj)
+{
+}
+
+function GrenadierUnitData::onTargetEnterLOS(%this,%obj)
+{
+}
+
+function GrenadierUnitData::onEndOfPath(%this,%obj,%path)
+{
+   %obj.nextTask();
+}
+
+function GrenadierUnitData::onEndSequence(%this,%obj,%slot)
+{
+   echo("Sequence Done!");
+   %obj.stopThread(%slot);
+   %obj.nextTask();
 }
 
 function GrenadierUnitData::fire(%this, %obj)

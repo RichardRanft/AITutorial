@@ -394,18 +394,21 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
         MissionCleanup.add(%point);
 
         %triggerName = "team"@%client.team@"Trigger" @ %obj.getId();
+        %box = %obj.getWorldBox();
+        %rot = %obj.rotation;
+        %pos = %obj.getPosition();
+        %scalex = (getWord(%box, 3) - getWord(%box, 0)) * 1.2;
+        %scaley = (getWord(%box, 4) - getWord(%box, 1)) * 1.2;
+        %scalez = (getWord(%box, 5) - getWord(%box, 2)) * 1.2;
+        %scale = %scalex SPC %scaley SPC %scalez;
         %trigger = new Trigger(%triggerName)
         {
-            class = "BarracksTrigger";
+            polyhedron = "-0.5 0.5 0.0 1.0 0.0 0.0 0.0 -1.0 0.0 0.0 0.0 1.0";
+            dataBlock = "BarracksTrigger";
+        	rotation = %rot;
+        	position = %pos;
+        	scale = %scale;
         };
-        %box = %obj.getWorldBox();
-        %scalex = (getWord(%box, 3) - getWord(%box, 0)) * 2.5;
-        %scaley = (getWord(%box, 4) - getWord(%box, 1)) * 2.5;
-        %scalez = (getWord(%box, 5) - getWord(%box, 2)) * 2.5;
-        %scale = %scalex SPC %scaley SPC %scalez;
-        %trigger.rotation = %obj.rotation;
-        %trigger.position = %point.getPosition();
-        %trigger.scale = %scale;
         %trigger.owner = %obj;
         MissionCleanup.add(%trigger);
     }

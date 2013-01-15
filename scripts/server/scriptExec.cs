@@ -47,3 +47,4 @@ exec("./gameDM.cs"); // Overrides GameCore with DeathMatch functionality.
 
 // Additional trigger code
 exec("./cameraTrigger.cs");
+exec("./barracks.cs");

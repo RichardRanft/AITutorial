@@ -97,7 +97,7 @@ new SimGroup(MissionGroup) {
          isAIControlled = "0";
          dataBlock = "SpawnSphereMarker";
          position = "348.682 -231.267 274.176";
-         rotation = "0.0911748 0.0439972 -0.994862 51.7514";
+         rotation = "0.0911749 0.0439972 -0.994862 51.7514";
          scale = "1 1 1";
          canSave = "1";
          canSaveDynamicFields = "1";

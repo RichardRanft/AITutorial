@@ -10,8 +10,9 @@ function BarracksTrigger::onEnterTrigger(%this,%trigger,%obj)
         // Update the Health GUI while repairing
         %this.doHealthUpdate(%obj);
         AIManager.loadOutUnit(%obj);
-        %obj.setMoveDestination(%obj.getPosition());
+        %obj.setMoveDestination(VectorAdd(%this.position, "0 5 0"));
 
         serverPlay3D(HealthUseSound, %this.owner.getTransform());
+        %obj.nextTask();
     }
 }
