@@ -81,9 +81,10 @@ function DefaultPlayerData::think(%this, %obj)
 
         return;
     }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead" || !isObject(%obj.target))
     {
         %obj.pushTask("fire" TAB false);
+        %obj.pushTask("evaluateCondition");
         return;
     }
     %obj.pushTask("clearTarget");
@@ -215,9 +216,10 @@ function DemoPlayerData::think(%this, %obj)
 
         return;
     }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead" || !isObject(%obj.target))
     {
         %obj.pushTask("fire" TAB false);
+        %obj.pushTask("evaluateCondition");
         return;
     }
     %obj.pushTask("clearTarget");
@@ -280,9 +282,10 @@ function AssaultUnitData::think(%this, %obj)
 
         return;
     }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead" || !isObject(%obj.target))
     {
         %obj.pushTask("fire" TAB false);
+        %obj.pushTask("evaluateCondition");
         return;
     }
     %obj.pushTask("clearTarget");
@@ -360,9 +363,10 @@ function GrenadierUnitData::think(%this, %obj)
 
         return;
     }
-    if (isObject(%obj.target) && %obj.target.getState() $= "dead")
+    if (isObject(%obj.target) && %obj.target.getState() $= "dead" || !isObject(%obj.target))
     {
         %obj.pushTask("fire" TAB false);
+        %obj.pushTask("evaluateCondition");
         return;
     }
     %obj.pushTask("clearTarget");

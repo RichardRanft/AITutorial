@@ -506,6 +506,102 @@ function AIPlayer::checkTargetStatus(%this)
     %this.nextTask();
 }
 
+function AIPlayer::evaluateCondition(%this)
+{
+    %maxDamage = %this.getDataBlock().maxDamage;
+    %damageThreshold = %maxDamage * 0.8;
+    %health = %maxDamage - %this.getDamageLevel();
+    if (%health < %damageThreshold)
+        %this.pushTask("findHealing");
+    %ammo = %this.getDataBlock().mainWeapon.image.ammo;
+    %currentAmmo = %this.getInventory(%ammo);
+    %maxAmmo = %this.maxInventory(%ammo);
+    %ammoThreshold = %maxAmmo * 0.3;
+    if (%currentAmmo < %ammoThreshold)
+        %this.pushTask("findAmmo");
+    %this.nextTask();
+}
+
+function AIPlayer::findHealing(%this)
+{
+    %obj = %this.findHealthKit();
+    if (isObject(%obj))
+        %dest = %obj.getPosition();
+    if (!isObject(%obj))
+    {
+            %obj = %this.findBarracks();
+        if (isObject(%obj))
+            %dest = %obj.spawnPoint.getPosition();
+    }
+    if (isObject(%obj))
+        %this.setMoveDestination(%dest);
+}
+
+function AIPlayer::findHealthKit(%this)
+{
+    initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::ItemObjectType);
+    %obj = containerSearchNext();
+    if (!isObject(%obj))
+        %this.nextTask();
+    while (isObject(%obj) && %obj.getDatablock().getName() !$= "HealthKitPatch")
+    {
+        %obj = containerSearchNext();
+        if (!isObject(%obj))
+            continue;
+    }
+    return %obj;
+}
+
+function AIPlayer::findAmmo(%this)
+{
+    %obj = %this.findAmmoDrop();
+    if (isObject(%obj))
+        %dest = %obj.getPosition();
+    if (!isObject(%obj))
+    {
+            %obj = %this.findBarracks();
+        if (isObject(%obj))
+            %dest = %obj.spawnPoint.getPosition();
+    }
+    if (isObject(%obj))
+        %this.setMoveDestination(%dest);
+}
+
+function AIPlayer::findAmmoDrop(%this)
+{
+    initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::ItemObjectType);
+    %weapon = %this.getDataBlock().mainWeapon.image;
+    %ammoType = %weapon.ammo;
+    %clipType = %weapon.clip;
+    %obj = containerSearchNext();
+    if (!isObject(%obj) || %obj $= "")
+        %this.nextTask();
+    %datablock = %obj.getDatablock().getName();
+    while (isObject(%obj) && (%datablock !$= %ammoType && %datablock !$= %clipType))
+    {
+        %obj = containerSearchNext();
+        if (!isObject(%obj))
+            continue;
+        %datablock = %obj.getDatablock().getName();
+    }
+    return %obj;
+}
+
+function AIPlayer::findBarracks(%this)
+{
+    initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::StaticObjectType);
+    %obj = containerSearchNext();
+    if (!isObject(%obj))
+        %this.nextTask();
+    while (isObject(%obj) && (%obj.class !$= "Barracks" || %obj.team != %this.team))
+    {
+        %obj = containerSearchNext();
+        if (!isObject(%obj))
+            continue;
+    }
+    return %obj;
+}
+
 /// <summary>
 /// This function clears the unit's current target.
 /// <summary>

@@ -388,9 +388,26 @@ function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
             spawnClass     = $Game::DefaultPlayerClass;
             spawnDatablock = %datablock;
         };
-        %point.position = VectorAdd(%obj.getPosition(), "0 5 2");
+        %point.position = VectorAdd(%obj.getPosition(), "0 6 2");
+        %obj.spawnPoint = %point;
         %teamSpawnGroup.add(%point);
         MissionCleanup.add(%point);
+
+        %triggerName = "team"@%client.team@"Trigger" @ %obj.getId();
+        %trigger = new Trigger(%triggerName)
+        {
+            class = "BarracksTrigger";
+        };
+        %box = %obj.getWorldBox();
+        %scalex = (getWord(%box, 3) - getWord(%box, 0)) * 2.5;
+        %scaley = (getWord(%box, 4) - getWord(%box, 1)) * 2.5;
+        %scalez = (getWord(%box, 5) - getWord(%box, 2)) * 2.5;
+        %scale = %scalex SPC %scaley SPC %scalez;
+        %trigger.rotation = %obj.rotation;
+        %trigger.position = %point.getPosition();
+        %trigger.scale = %scale;
+        %trigger.owner = %obj;
+        MissionCleanup.add(%trigger);
     }
 }
 

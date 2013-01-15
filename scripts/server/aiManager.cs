@@ -81,7 +81,7 @@ function AIManager::start(%this, %priorityTime, %idleTime, %priorityRadius, %sle
 function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority, %onPath)
 {
     %newUnit = %this.spawn(%name, %spawnLocation, %datablock, %priority, %onPath);
-    %this.loadOutUnit(%newUnit, true);
+    %this.loadOutUnit(%newUnit, false);
     if (%newUnit.priority > 0)
         %this.priorityGroup.add(%newUnit);
     else

@@ -196,7 +196,7 @@ function AIClientManager::underAttack(%this, %unit, %damage, %source)
         return;
     if (%source.sourceObject.team == %unit.team)
     {
-        echo(" @@@ Friendly Fire!");
+        //echo(" @@@ Friendly Fire!");
         return;
     }
     if (isEventPending(%unit.waitForHelp))
@@ -218,7 +218,6 @@ function AIClientManager::underAttack(%this, %unit, %damage, %source)
             %dest = %unit.getPosition();
             %dest.x += %offsetX;
             %dest.y += %offsetY;
-            %unit.pushTask("attack" TAB %source.sourceObject);
             %ally.target = %source.sourceObject;
             %ally.setMoveDestination(%dest);
         }
