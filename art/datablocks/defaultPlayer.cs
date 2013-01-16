@@ -60,6 +60,7 @@ function DefaultPlayerData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
+			%obj.target = %obj.damageSourceObj.sourceObject;
 			if (!%obj.receivedAttackResponse)
 			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
@@ -83,8 +84,16 @@ function DefaultPlayerData::think(%this, %obj)
 
     if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
     {
-        if (%canFire)
+        if (!%obj.getLOS(%obj.target))
+        {
+            %obj.pushTask("fire" TAB %obj TAB false);
+            %obj.setMoveDestination(%obj.intersectPos);
+        }
+        else if (%obj.canFire)
+        {
+            %obj.setMoveDestination(%obj.getPosition());
             %obj.pushTask("attack" TAB %obj.target);
+        }
 
         return;
     }

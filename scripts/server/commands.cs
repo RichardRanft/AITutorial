@@ -421,7 +421,7 @@ function serverCmdspawnTeammate(%client, %source)
     %spawnName = "team"@%client.team@"Spawn" @ %source.getId();
 
     %newBot = %client.AIMan.addUnit("", %spawnName, %spawnName.spawnDatablock);
-    %spawnLocation = GameCore::pickPointInSpawnSphere(%newBot, %spawnName);
+    %spawnLocation = DeathMatchGame::pickPointInSpawnSphere(%newBot, %spawnName);
     %newBot.setTransform(%spawnLocation);
 
     %x = getRandom(-10, 10);

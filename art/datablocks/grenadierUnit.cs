@@ -102,6 +102,7 @@ function GrenadierUnitData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
+			%obj.target = %obj.damageSourceObj.sourceObject;
 			if (!%obj.receivedAttackResponse)
 			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
@@ -125,7 +126,7 @@ function GrenadierUnitData::think(%this, %obj)
 
     if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
     {
-        if (%canFire)
+        if (%obj.canFire)
             %obj.pushTask("attack" TAB %obj.target);
 
         return;

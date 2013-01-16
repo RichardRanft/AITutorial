@@ -53,6 +53,8 @@ function AIPlayer::ReachDestination(%this)
 
         %this.nextTask();
     }
+    if(isObject(%this.target) && %this.target.getState() !$= "dead")
+        %this.pushTask("attack" TAB %this.target);
 }
 
 function AIPlayer::MoveStuck(%this)
@@ -62,10 +64,15 @@ function AIPlayer::MoveStuck(%this)
 
 function AIPlayer::TargetExitLOS(%this)
 {
+    %this.pushTask("fire" TAB %this TAB false);
+    %this.setMoveDestination(%this.targetLKP);
 }
 
 function AIPlayer::TargetEnterLOS(%this)
 {
+    if ( %this.target != %this && isObject(%this.target) )
+        %this.targetLKP = %this.target.getPosition();
+    %this.pushTask("attack" TAB %this.target);
 }
 
 function AIPlayer::EndOfPath(%this,%path)
@@ -737,12 +744,18 @@ function AIPlayer::fire(%this, %bool)
 {
     if (!isObject(%this.target))
         %bool = false;
+    if (%this.target.team == %this.team)
+    {
+        %this.target = "";
+        %this.nextTask();
+    }
+    %bool = %this.getLOS(%this.target);
 
-    %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
+    %this.canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
     %datablock = %this.getDatablock();
     if (%bool)
     {
-        if (%canFire)
+        if (%this.canFire)
             %datablock.fire(%this);
     }
     else
@@ -789,10 +802,41 @@ function AIPlayer::think(%this)
     %datablock.think(%this);
 }
 
+function AIPlayer::getLOS(%this, %target)
+{
+    if (!isObject(%target))
+    {
+        %this.canFire = true;
+        return false;
+    }
+    %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
+        $TypeMasks::InteriorObjectType | $TypeMasks::StaticObjectType;
+
+    // Search!
+    %objPos = %this.getEyePoint();
+    %targetPos = %target.getWorldBoxCenter();
+    %scanTarg = ContainerRayCast( %objPos, %targetPos, %searchMasks);
+    if (%scanTarg)
+    {
+        %this.intersectPos = getWords(%scanTarg, 1, 3);
+        %this.canFire = false;
+        return false;
+    }
+    %this.canFire = true;
+    return true;
+}
+
+/// <summary>
+/// This function handles the unitUnderAttack event.  It determines if there is
+/// a datablock-specific response to the event and calls it, or calls the default
+/// AIPlayer response.
+/// The format of <msgData> is assumed to be <originatingUnit>TAB<messageHandler>TAB<tab-delimited data>
+/// </summary>
+/// <param name="msgData">Data to pass to the actual event handler.
 function AIPlayer::unitUnderAttack(%this, %msgData)
 {
     %unit = getField(%msgData, 0);
-    if (%this.team != %unit.team || %unit == %this || %this.respondedTo == %unit)
+    if (%this.team != %unit.team || %this.respondedTo == %unit)
         return;
     %method  = getField(%msgData, 1);
     %datablock = %this.getDataBlock();
@@ -805,6 +849,10 @@ function AIPlayer::unitUnderAttack(%this, %msgData)
     }
 }
 
+/// <summary>
+/// This function handles the unitUnderAttack event for AIPlayer if there is no
+/// datablock-specific handler.
+/// </summary>
 function AIPlayer::underAttack(%this, %msgData)
 {
     %unit = getField(%msgData, 0);

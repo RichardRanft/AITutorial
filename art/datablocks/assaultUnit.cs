@@ -87,16 +87,17 @@ function AssaultUnitData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
+			%obj.target = %obj.damageSourceObj.sourceObject;
 			if (!%obj.receivedAttackResponse)
 			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);
     // bail - can't attack anything right now anyway, why bother with the search?
-    if (!%canFire)
+    if (!%obj.canFire)
         return;
 
-    if (!isObject(%obj.target))
+    if (!isObject(%target))
     {
         %target = %obj.getNearestTarget(100.0);
         if (isObject(%target))
@@ -110,8 +111,16 @@ function AssaultUnitData::think(%this, %obj)
 
     if (isObject(%obj.target) && %obj.target.getState() !$= "dead")
     {
-        if (%canFire)
+        if (!%obj.getLOS(%obj.target))
+        {
+            %obj.pushTask("fire" TAB %obj TAB false);
+            %obj.setMoveDestination(%obj.intersectPos);
+        }
+        else if (%obj.canFire)
+        {
+            %obj.setMoveDestination(%obj.getPosition());
             %obj.pushTask("attack" TAB %obj.target);
+        }
 
         return;
     }

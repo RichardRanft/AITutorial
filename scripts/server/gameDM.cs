@@ -166,3 +166,58 @@ function DeathMatchGame::pickPlayerSpawnPoint(%game, %spawnGroups)
 
     return DefaultPlayerSpawnSphere;
 }
+
+function DeathMatchGame::pickPointInSpawnSphere(%objectToSpawn, %spawnSphere)
+{
+   %SpawnLocationFound = false;
+   %attemptsToSpawn = 0;
+   while(!%SpawnLocationFound && (%attemptsToSpawn < 5))
+   {
+      %sphereLocation = %spawnSphere.getTransform();
+      
+      // Attempt to spawn the player within the bounds of the spawnsphere.
+      %angleY = mDegToRad(getRandom(0, 100) * m2Pi());
+      %angleXZ = mDegToRad(getRandom(0, 100) * m2Pi());
+
+      %sphereLocation = setWord( %sphereLocation, 0, getWord(%sphereLocation, 0) + (mCos(%angleY) * mSin(%angleXZ) * getRandom(-%spawnSphere.radius, %spawnSphere.radius)));
+      %sphereLocation = setWord( %sphereLocation, 1, getWord(%sphereLocation, 1) + (mCos(%angleXZ) * getRandom(-%spawnSphere.radius, %spawnSphere.radius)));
+      
+      %SpawnLocationFound = true;
+
+      // Now have to check that another object doesn't already exist at this spot.
+      // Use the bounding box of the object to check if where we are about to spawn in is
+      // clear.
+      %boundingBoxSize = %objectToSpawn.getDatablock().boundingBox;
+      %searchRadius = getWord(%boundingBoxSize, 0);
+      %boxSizeY = getWord(%boundingBoxSize, 1);
+      
+      // Use the larger dimention as the radius to search
+      if (%boxSizeY > %searchRadius)
+         %searchRadius = %boxSizeY;
+         
+      // Search a radius about the area we're about to spawn for players.
+      initContainerRadiusSearch( %sphereLocation, %searchRadius, $TypeMasks::PlayerObjectType );
+      while ( (%objectNearExit = containerSearchNext()) != 0 && isObject(%objectNearExit) && %objectNearExit != %objectToSpawn)
+      {
+         // If any player is found within this radius, mark that we need to look
+         // for another spot.
+         %SpawnLocationFound = false;
+         break;
+      }
+         
+      // If the attempt at finding a clear spawn location failed
+      // try no more than 5 times.
+      %attemptsToSpawn++;
+   }
+      
+   // If we couldn't find a spawn location after 5 tries, spawn the object
+   // At the center of the sphere and give a warning.
+   if (!%SpawnLocationFound)
+   {
+      %sphereLocation = %spawnSphere.getTransform();
+      warn("WARNING: Could not spawn player after" SPC %attemptsToSpawn 
+      SPC "tries in spawnsphere" SPC %spawnSphere SPC "without overlapping another player. Attempting spawn in center of sphere.");
+   }
+   
+   return %sphereLocation;
+}
