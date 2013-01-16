@@ -119,7 +119,7 @@ function DemoPlayerData::think(%this, %obj)
         }
         else if (%obj.canFire)
         {
-            %obj.setMoveDestination(%obj.getPosition());
+            %obj.stop();
             %obj.pushTask("attack" TAB %obj.target);
         }
 

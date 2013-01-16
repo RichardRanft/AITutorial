@@ -213,3 +213,42 @@ function clientCmddisplayPlacementDecal()
    // store in the player
     PlayGui.placingBuilding = true;
 }
+
+function clientCmdcompleteMove(%pos, %start, %ray)
+{
+    %ray = VectorScale(%ray, 1000);
+    %end = VectorAdd(%start, %ray);
+
+    // only care about terrain objects
+    %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
+    $TypeMasks::InteriorObjectType | $TypeMasks::ShapeBaseObjectType | $TypeMasks::StaticObjectType;
+
+    // search!
+    %scanTarg = ContainerRayCast( %start, %end, %searchMasks);
+
+    if (%scanTarg)
+    {
+        %obj = getWord(%scanTarg, 0);
+
+        while (%obj.class $= "barrier")
+        {
+            // Get the X,Y,Z position of where we clicked
+            %pos = getWords(%scanTarg, 1, 3);
+            %restart = VectorNormalize(VectorSub(%end, %pos));
+            %pos = VectorAdd(%pos, %restart);
+            %scanTarg = ContainerRayCast( %pos, %end, %searchMasks);
+            %obj = getWord(%scanTarg, 0);
+        }
+
+        // Get the X,Y,Z position of where we clicked
+        %pos = getWords(%scanTarg, 1, 3);
+
+        // Get the normal of the location we clicked on
+        %norm = getWords(%scanTarg, 4, 6);
+
+        // Create a new decal using the decal manager
+        // arguments are (Position, Normal, Rotation, Scale, Datablock, Permanent)
+        // We are now just letting the decals clean up after themselves.
+        decalManagerAddDecal(%pos, %norm, 0, 1, "gg_decal", false);
+    }
+}

@@ -193,6 +193,9 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
     // Get access to the AI player we control
     %ai = findTeamLeader(%client.team);
 
+    if (!isObject(%ai))
+        return;
+
     %ray = VectorScale(%ray, 1000);
     %end = VectorAdd(%start, %ray);
 
@@ -235,6 +238,7 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
         else
             %ai.setMoveDestination( %pos );
     }
+    commandToClient(%client, 'completeMove', %pos, %start, %ray);
 }
 
 function serverCmdcheckTarget(%client, %pos, %start, %ray)

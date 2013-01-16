@@ -39,19 +39,22 @@ function AIPlayer::ReachDestination(%this)
     }
     else
     {
-        if (!%this.destReached)
+        if (!isObject(%this.target) || %this.target.getState() $= "dead")
         {
-            %this.destReached = true;
-            %x = getRandom(-5, 5);
-            %y = getRandom(-5, 5);
-            %vec = %x SPC %y SPC "0";
+            if (!%this.destReached)
+            {
+                %this.destReached = true;
+                %x = getRandom(-5, 5);
+                %y = getRandom(-5, 5);
+                %vec = %x SPC %y SPC "0";
 
-            %this.setMoveDestination(VectorAdd(%this.getPosition(), %vec));
+                %this.setMoveDestination(VectorAdd(%this.getPosition(), %vec));
+            }
+            else
+                %this.destReached = false;
+
+            %this.nextTask();
         }
-        else
-            %this.destReached = false;
-
-        %this.nextTask();
     }
     if(isObject(%this.target) && %this.target.getState() !$= "dead")
         %this.pushTask("attack" TAB %this.target);
@@ -127,6 +130,83 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
    %node = %path.getObject(0);
    %player = AIPlayer::spawn(%name, %node.getTransform(), %datablock, %priority);
    return %player;
+}
+
+function AIPlayer::getLOS(%this, %target)
+{
+    if (!isObject(%target))
+    {
+        %this.canFire = true;
+        return false;
+    }
+    %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
+        $TypeMasks::InteriorObjectType | $TypeMasks::StaticObjectType;
+
+    // Search!
+    %objPos = %this.getEyePoint();
+    %targetPos = %target.getWorldBoxCenter();
+    %scanTarg = ContainerRayCast( %objPos, %targetPos, %searchMasks);
+    if (%scanTarg)
+    {
+        %this.intersectPos = getWords(%scanTarg, 1, 3);
+        %this.canFire = false;
+        return false;
+    }
+    %this.canFire = true;
+    return true;
+}
+
+/// <summary>
+/// This function handles the unitUnderAttack event.  It determines if there is
+/// a datablock-specific response to the event and calls it, or calls the default
+/// AIPlayer response.
+/// The format of <msgData> is assumed to be <originatingUnit>TAB<messageHandler>TAB<tab-delimited data>
+/// </summary>
+/// <param name="msgData">Data to pass to the actual event handler.
+function AIPlayer::unitUnderAttack(%this, %msgData)
+{
+    %unit = getField(%msgData, 0);
+    if (%this.team != %unit.team || %this.respondedTo == %unit)
+        return;
+    %method  = getField(%msgData, 1);
+    %datablock = %this.getDataBlock();
+    if (%datablock.isMethod(%method))
+        eval(%datablock.getName()@"."@%method@"(\""@%msgData@"\");");
+    else if (%this.isMethod(%method))
+    {
+        eval("%this."@%method@"(\""@%msgData@"\");");
+        %this.respondedTo = %unit;
+    }
+}
+
+/// <summary>
+/// This function handles the unitUnderAttack event for AIPlayer if there is no
+/// datablock-specific handler.
+/// </summary>
+function AIPlayer::underAttack(%this, %msgData)
+{
+    %unit = getField(%msgData, 0);
+    %source = getField(%msgData, 3);
+    if (%source.sourceObject.team == %this.team)
+        return;
+    %dest = %unit.getPosition();
+    %dist = VectorDist(%dest, %this.getPosition()) - $AIEventManager::DefaultAttackResponseDist;
+    %distWeight = (1/(%dist > 0 ? %dist : 1));
+    if (%distWeight > 0.1)
+    {
+        %offsetX = getRandom(-20, 20);
+        %offsetY = getRandom(-20, 20);
+        %dest.x += %offsetX;
+        %dest.y += %offsetY;
+        %this.target = %source.sourceObject;
+        %this.setMoveDestination(%dest);
+        %unit.notifyAttackResponse();
+    }
+}
+
+function AIPlayer::notifyAttackResponse(%this)
+{
+    %this.receivedAttackResponse = true;
 }
 
 //-----------------------------------------------------------------------------
@@ -575,7 +655,7 @@ function AIPlayer::closeOnTarget(%this)
             %this.schedule(300, pushTask, "closeOnTarget");
         }
         else
-            %this.setMoveDestination(%this.getPosition());
+            %this.stop();
     }
     %this.nextTask();
 }
@@ -800,81 +880,4 @@ function AIPlayer::think(%this)
 {
     %datablock = %this.getDataBlock();
     %datablock.think(%this);
-}
-
-function AIPlayer::getLOS(%this, %target)
-{
-    if (!isObject(%target))
-    {
-        %this.canFire = true;
-        return false;
-    }
-    %searchMasks = $TypeMasks::TerrainObjectType | $TypeMasks::StaticTSObjectType | 
-        $TypeMasks::InteriorObjectType | $TypeMasks::StaticObjectType;
-
-    // Search!
-    %objPos = %this.getEyePoint();
-    %targetPos = %target.getWorldBoxCenter();
-    %scanTarg = ContainerRayCast( %objPos, %targetPos, %searchMasks);
-    if (%scanTarg)
-    {
-        %this.intersectPos = getWords(%scanTarg, 1, 3);
-        %this.canFire = false;
-        return false;
-    }
-    %this.canFire = true;
-    return true;
-}
-
-/// <summary>
-/// This function handles the unitUnderAttack event.  It determines if there is
-/// a datablock-specific response to the event and calls it, or calls the default
-/// AIPlayer response.
-/// The format of <msgData> is assumed to be <originatingUnit>TAB<messageHandler>TAB<tab-delimited data>
-/// </summary>
-/// <param name="msgData">Data to pass to the actual event handler.
-function AIPlayer::unitUnderAttack(%this, %msgData)
-{
-    %unit = getField(%msgData, 0);
-    if (%this.team != %unit.team || %this.respondedTo == %unit)
-        return;
-    %method  = getField(%msgData, 1);
-    %datablock = %this.getDataBlock();
-    if (%datablock.isMethod(%method))
-        eval(%datablock.getName()@"."@%method@"(\""@%msgData@"\");");
-    else if (%this.isMethod(%method))
-    {
-        eval("%this."@%method@"(\""@%msgData@"\");");
-        %this.respondedTo = %unit;
-    }
-}
-
-/// <summary>
-/// This function handles the unitUnderAttack event for AIPlayer if there is no
-/// datablock-specific handler.
-/// </summary>
-function AIPlayer::underAttack(%this, %msgData)
-{
-    %unit = getField(%msgData, 0);
-    %source = getField(%msgData, 3);
-    if (%source.sourceObject.team == %this.team)
-        return;
-    %dest = %unit.getPosition();
-    %dist = VectorDist(%dest, %this.getPosition()) - $AIEventManager::DefaultAttackResponseDist;
-    %distWeight = (1/(%dist > 0 ? %dist : 1));
-    if (%distWeight > 0.1)
-    {
-        %offsetX = getRandom(-20, 20);
-        %offsetY = getRandom(-20, 20);
-        %dest.x += %offsetX;
-        %dest.y += %offsetY;
-        %this.target = %source.sourceObject;
-        %this.setMoveDestination(%dest);
-        %unit.notifyAttackResponse();
-    }
-}
-
-function AIPlayer::notifyAttackResponse(%this)
-{
-    %this.receivedAttackResponse = true;
 }
