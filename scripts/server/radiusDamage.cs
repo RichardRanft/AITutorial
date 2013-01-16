@@ -15,7 +15,7 @@ function radiusDamage(%sourceObject, %position, %radius, %damage, %damageType, %
    InitContainerRadiusSearch(%position, %radius, $TypeMasks::ShapeBaseObjectType);
 
    %halfRadius = %radius / 2;
-   while ((%targetObject = containerSearchNext()) != 0)
+   while ((%targetObject = containerSearchNext()) != 0 && isObject(%targetObject))
    {
       // Calculate how much exposure the current object has to
       // the explosive force.  The object types listed are objects
