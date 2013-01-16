@@ -96,18 +96,39 @@ function AIClientManager::think(%this)
     %this.schedule(%this.thinkTime, "think");
 }
 
+/// <summary>
+/// This method creates a message object and queues it for think() to handle.
+/// The message data should be tab-delimited and should contain first the 
+/// message originator, then the method to call, and then any parameters for the 
+/// desired method.
+///
+/// AIClientManager.sendMessage(<unit> TAB <handler> TAB <handler parameter1> TAB <etc...>);
+/// </summary>
+/// <param name="message">The data for the message object.</param>
 function AIClientManager::sendMessage(%this, %message)
 {
+    // We need to create a script object and add it to the message que.
+    // In a more interesting implementation there might be a priority system
+    // for messages either sorted by multiple queues or by a priority tag on
+    // the message objects.
     if (!isObject(%this.messageQue))
         %this.messageQue = new SimSet();
     %msgObj = new ScriptObject();
+    // Here we attach the message data to the message object.
     %msgObj.message = %message;
     %this.messageQue.add(%msgObj);
     %this.messageQue.bringToFront(%msgObj);
 }
 
+/// <summary>
+/// This method parses and handles AI unit messages.
+/// </summary>
+/// <param name="message">The message object to handle.</param>
 function AIClientManager::handleMessage(%this, %message)
 {
+    // In this case, %message is a script object with a field that carries
+    // the data we need to handle the message, so we parse the field for our
+    // data.
     %unit = getField(%message.message, 0);
     %unitMessage = getField(%message.message, 1);
     %dataCount = getFieldCount(%message.message);
@@ -123,14 +144,24 @@ function AIClientManager::handleMessage(%this, %message)
             %i++;
         }
     }
+    // now that we've parsed this out, check that the message is actually implemented
+    // as a handler method on the AIClientManager.
     if (%this.isMethod(%unitMessage))
     {
+        // We're good, evaluate the method
         eval("%this."@%unitMessage@"("@%unit@", "@%data@");");
     }
     %this.messageQue.remove(%message);
     %message.delete();
 }
 
+/// <summary>
+/// This method creates a list of "nearest" allies drawn from our team's unit
+/// list.
+/// </summary>
+/// <param name="unit">The unit that sent the message.</param>
+/// <param name="num">The number of allies to gather.</param>
+/// <param name="range">The search radius.</param>
 function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
 {
     %ally = %this.unitList.getObject(0);
