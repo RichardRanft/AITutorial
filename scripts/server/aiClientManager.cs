@@ -46,6 +46,7 @@ function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %pri
     %newUnit = AIManager.addUnit(%name, %spawnLocation, %datablock, %priority, %onPath);
     %newUnit.team = (%this.client !$= "" ? %this.client : 0);
     %newUnit.AIClientMan = %this;
+    AIEventManager.subscribe(%newUnit, "_UnitUnderAttack", "unitUnderAttack");
     %this.unitList.add(%newUnit);
     return %newUnit;
 }
@@ -155,71 +156,6 @@ function AIClientManager::handleMessage(%this, %message)
     %message.delete();
 }
 
-/// <summary>
-/// This method creates a list of "nearest" allies drawn from our team's unit
-/// list.
-/// </summary>
-/// <param name="unit">The unit that sent the message.</param>
-/// <param name="num">The number of allies to gather.</param>
-/// <param name="range">The search radius.</param>
-function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
-{
-    %ally = %this.unitList.getObject(0);
-    if (!isObject(%ally) || %ally == 0 || %ally.getState() $= "dead")
-    {
-        return 0;
-    }
-    
-    %allyList = new SimSet();
-    %totalAllies = %this.unitList.getCount();
-    %count = %allyList.getCount();
-    if (%num > %totalAllies - 1)
-        %num = %totalAllies - 1;
-    %index = 1;
-    %unitPos = %unit.getPosition();
-    %dist = %range + 1;
-    while (%count < %num)
-    {
-        %totalAllies = %this.unitList.getCount();
-        if (%index >= %totalAllies)
-            break;
-        if (!isObject(%ally) || %ally == 0 || %ally == %unit || %ally.getState() $= "dead")
-        {
-            %ally = %this.unitList.getObject(%index);
-            %count = %allyList.getCount();
-            %index++;
-            continue;
-        }
-        %allyPos = %ally.getPosition();
-        %allyDist = VectorDist(%allyPos, %unitPos);
-        if (%allyDist > %range)
-        {
-            %index++;
-            continue;
-        }
-        if (%dist > %tempDist)
-        {
-            %dist = %tempDist;
-            %ally.dist = %dist;
-            %allyList.add(%ally);
-            %currCount = %allyList.getCount();
-            for (%i = 0; %i < %currCount; %i++)
-            {
-                %obj = %allyList.getObject(%i);
-                if (%obj.dist > %dist && %currCount > %num)
-                {
-                    %allyList.remove(%obj);
-                    %currCount--;
-                }
-            }
-        }
-        %ally = %this.unitList.getObject(%index);
-        %count = %allyList.getCount();
-        %index++;
-    }
-    return %allyList;
-}
-
 //-----------------------------------------------------------------------------
 // Message handlers
 //-----------------------------------------------------------------------------
@@ -242,50 +178,3 @@ function AIClientManager::getNearestAllyList(%this, %unit, %num, %range)
 // <sending unit> TAB <message name> TAB <tab-delimited handler parameters>
 //
 // At the moment messages are simply handled in the order received.
-
-/// <summary>
-/// A simple message to friendly units that %unit is under attack
-/// </summary>
-/// <param name="unit">The unit that sent the message.</param>
-/// <param name="damage"><unit>'s current damage level.</param>
-/// <param name="source">The object that damaged <unit>.</param>
-function AIClientManager::underAttack(%this, %unit, %damage, %source)
-{
-    // %source is most likely a projectile, but whatever it is it should carry a sourceObject
-    // field on it that should hold the originating unit (the unit that fired the projectile).
-    //echo(" @@@ AI Unit " @ %unit @ " sent message underAttack with data " @ %damage @ ":" @ %source @":"@%source.sourceObject);
-    if (%unit.getState() $= "dead")
-        return;
-    if (%source.sourceObject.team == %unit.team)
-    {
-        //echo(" @@@ Friendly Fire!");
-        return;
-    }
-    if (isEventPending(%unit.waitForHelp))
-        return;
-
-    %unit.waitForHelp = %unit.schedule(2000, think);
-
-    %allyList = %this.getNearestAllyList(%unit, 3, 250);
-    if(isObject(%allyList))
-    {
-        %allyCount = %allyList.getCount();
-        if (%allyCount > 0)
-        {
-            for (%i = 0; %i < %allyCount; %i++)
-            {
-                %ally = %allyList.getObject(%i);
-                if (!isObject(%ally))
-                    continue;
-                %offsetX = getRandom(-20, 20);
-                %offsetY = getRandom(-20, 20);
-                %dest = %unit.getPosition();
-                %dest.x += %offsetX;
-                %dest.y += %offsetY;
-                %ally.target = %source.sourceObject;
-                %ally.setMoveDestination(%dest);
-            }
-        }
-        %allyList.delete();
-    }
-}

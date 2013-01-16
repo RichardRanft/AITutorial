@@ -698,6 +698,7 @@ function AIPlayer::clearTarget(%this)
 {
     %this.setAimObject(0);
     %this.target = "";
+    %this.receivedAttackResponse = false;
     %this.schedule(32, "setImageTrigger", 0, 0);
     %this.nextTask();
 }
@@ -786,4 +787,46 @@ function AIPlayer::think(%this)
 {
     %datablock = %this.getDataBlock();
     %datablock.think(%this);
+}
+
+function AIPlayer::unitUnderAttack(%this, %msgData)
+{
+    %unit = getField(%msgData, 0);
+    if (%this.team != %unit.team || %unit == %this || %this.respondedTo == %unit)
+        return;
+    %method  = getField(%msgData, 1);
+    %datablock = %this.getDataBlock();
+    if (%datablock.isMethod(%method))
+        eval(%datablock.getName()@"."@%method@"(\""@%msgData@"\");");
+    else if (%this.isMethod(%method))
+    {
+        eval("%this."@%method@"(\""@%msgData@"\");");
+        %this.respondedTo = %unit;
+    }
+}
+
+function AIPlayer::underAttack(%this, %msgData)
+{
+    %unit = getField(%msgData, 0);
+    %source = getField(%msgData, 3);
+    if (%source.sourceObject.team == %this.team)
+        return;
+    %dest = %unit.getPosition();
+    %dist = VectorDist(%dest, %this.getPosition()) - $AIEventManager::DefaultAttackResponseDist;
+    %distWeight = (1/(%dist > 0 ? %dist : 1));
+    if (%distWeight > 0.1)
+    {
+        %offsetX = getRandom(-20, 20);
+        %offsetY = getRandom(-20, 20);
+        %dest.x += %offsetX;
+        %dest.y += %offsetY;
+        %this.target = %source.sourceObject;
+        %this.setMoveDestination(%dest);
+        %unit.notifyAttackResponse();
+    }
+}
+
+function AIPlayer::notifyAttackResponse(%this)
+{
+    %this.receivedAttackResponse = true;
 }

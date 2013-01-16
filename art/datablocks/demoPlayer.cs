@@ -88,7 +88,8 @@ function DemoPlayerData::think(%this, %obj)
 		if (%damageLvl > %obj.damageLvl)
 		{
 			%obj.damageLvl = %damageLvl;
-			%obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
+			if (!%obj.receivedAttackResponse)
+			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
     %canFire = (%obj.trigger !$= "" ? !isEventPending(%obj.trigger) : true);

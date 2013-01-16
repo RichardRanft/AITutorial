@@ -60,16 +60,20 @@ function DeathMatchGame::initGameVars(%game)
 
 function DeathMatchGame::startGame(%game)
 {
-   //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::startGame");
+    //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::startGame");
 
-   parent::startGame(%game);
+    parent::startGame(%game);
+    exec("./aiEventManger.cs");
+
+    initializeAIEventManager();
 }
 
 function DeathMatchGame::endGame(%game)
 {
-   //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::endGame");
+    //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::endGame");
 
-   parent::endGame(%game);
+    destroyAIEventManager();
+    parent::endGame(%game);
 }
 
 function DeathMatchGame::onGameDurationEnd(%game)
