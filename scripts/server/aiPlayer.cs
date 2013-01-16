@@ -678,17 +678,26 @@ function AIPlayer::checkTargetStatus(%this)
 
 function AIPlayer::evaluateCondition(%this)
 {
-    %maxDamage = %this.getDataBlock().maxDamage;
-    %damageThreshold = %maxDamage * 0.8;
-    %health = %maxDamage - %this.getDamageLevel();
-    if (%health < %damageThreshold)
-        %this.pushTask("findHealing");
-    %ammo = %this.getDataBlock().mainWeapon.image.ammo;
-    %currentAmmo = %this.getInventory(%ammo);
-    %maxAmmo = %this.maxInventory(%ammo);
-    %ammoThreshold = %maxAmmo * 0.3;
-    if (%currentAmmo < %ammoThreshold)
-        %this.pushTask("findAmmo");
+    %datablock = %this.getDataBlock();
+    if (%datablock.isMethod("evaluateCondition"))
+        %datablock.evaluateCondition(%this);
+    else
+    {
+        %maxDamage = %this.getDataBlock().maxDamage;
+        %damageThreshold = %maxDamage * 0.8;
+        %health = %maxDamage - %this.getDamageLevel();
+
+        if (%health < %damageThreshold)
+            %this.pushTask("findHealing");
+
+        %ammo = %this.getDataBlock().mainWeapon.image.ammo;
+        %currentAmmo = %this.getInventory(%ammo);
+        %maxAmmo = %this.maxInventory(%ammo);
+        %ammoThreshold = %maxAmmo * 0.3;
+
+        if (%currentAmmo < %ammoThreshold)
+            %this.pushTask("findAmmo");
+    }
     %this.nextTask();
 }
 

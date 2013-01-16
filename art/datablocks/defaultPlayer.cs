@@ -125,3 +125,20 @@ function DefaultPlayerData::fire(%this, %obj)
     %obj.pushTask("checkTargetStatus");
     %obj.nextTask();
 }
+
+function DefaultPlayerData::evaluateCondition(%this, %obj)
+{
+    %damageThreshold = %this.maxDamage * 0.5;
+    %health = %this.maxDamage - %obj.getDamageLevel();
+
+    if (%health < %damageThreshold)
+        %obj.pushTask("findHealing");
+
+    %ammo = %this.mainWeapon.image.ammo;
+    %currentAmmo = %obj.getInventory(%ammo);
+    %maxAmmo = %obj.maxInventory(%ammo);
+    %ammoThreshold = %maxAmmo * 0.5;
+
+    if (%currentAmmo < %ammoThreshold)
+        %obj.pushTask("findAmmo");
+}
