@@ -147,6 +147,8 @@ function GrenadierUnitData::think(%this, %obj)
 /// This function handles the unitUnderAttack event for GrenadierUnitData, overriding
 /// the default AIPlayer version.
 /// </summary>
+/// <param name="obj">The "this" AIPlayer that this was called for.</param>
+/// <param name="msgData">The message data from the message system.</param>
 function GrenadierUnitData::underAttack(%this, %obj, %msgData)
 {
     %unit = getField(%msgData, 0);
