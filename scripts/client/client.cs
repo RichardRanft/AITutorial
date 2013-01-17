@@ -214,6 +214,8 @@ function clientCmddisplayPlacementDecal()
     PlayGui.placingBuilding = true;
 }
 
+// Set this up to complete the move requested from the server.  This is where we
+// draw our destination decal, at the server's request.
 function clientCmdcompleteMove(%pos, %start, %ray)
 {
     %ray = VectorScale(%ray, 1000);

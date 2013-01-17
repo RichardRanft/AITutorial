@@ -186,6 +186,8 @@ function serverCmdspawnBaddie(%client)
 // Player commands
 // ----------------------------------------------------------------------------
 
+// Request that the server move the AI unit or units in question to the position
+// we clicked.
 function serverCmdmovePlayer(%client, %pos, %start, %ray)
 {
     //echo(" -- " @ %client @ ":" @ %client.player @ " moving");
@@ -193,6 +195,7 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
     // Get access to the AI player we control
     %ai = findTeamLeader(%client.team);
 
+    // If we don't have a unit selected we don't need to be here....
     if (!isObject(%ai))
         return;
 
@@ -238,9 +241,11 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
         else
             %ai.setMoveDestination( %pos );
     }
+    // tell the client to draw our destination decal
     commandToClient(%client, 'completeMove', %pos, %start, %ray);
 }
 
+// Find out what we clicked on and act accordingly
 function serverCmdcheckTarget(%client, %pos, %start, %ray)
 {
     %ray = VectorScale(%ray, 1000);
@@ -313,6 +318,7 @@ function serverCmdcheckTarget(%client, %pos, %start, %ray)
     }
 }
 
+// cancels the current units' attack.
 function serverCmdstopAttack(%client)
 {
     // If no valid target was found, or left mouse
@@ -327,6 +333,8 @@ function serverCmdstopAttack(%client)
     }
 }
 
+// create a building as indicated by the %type at the point we clicked.  Right
+// now this only creates a "Barracks" building.
 function serverCmdcreateBuilding(%client, %pos, %start, %ray, %type)
 {
     // find end of search vector
@@ -433,8 +441,6 @@ function serverCmdspawnTeammate(%client, %source)
     %vec = %x SPC %y SPC "0";
     %dest = VectorAdd(%newBot.getPosition(), %vec);
     %newBot.setMoveDestination(%dest);
-
-    addTeamBot(%newBot, %client.team);
 }
 
 function serverCmdtoggleMultiSelect(%client, %flag)
@@ -472,6 +478,7 @@ function multiSelect(%target, %team)
     }
 
     %target.isSelected = true;
+    %teamList.add(%target);
 }
 
 function findTeamLeader(%team)
@@ -501,7 +508,6 @@ function addTeamBot(%bot, %team)
         new SimSet(%listName);
         MissionCleanup.add(%listName);
     }
-    %bot.team = %team;
     %listName.add(%bot);
 }
 
@@ -521,9 +527,4 @@ function cleanupSelectGroup(%team)
         %temp.isLeader = false;
         %temp.destOffset = "0 0 0";
     }
-}
-
-function serverCmdgetAI(%client)
-{
-    %unit = findTeamLeader(%client.team);
 }

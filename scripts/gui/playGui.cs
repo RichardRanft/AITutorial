@@ -69,7 +69,10 @@ function refreshCenterTextCtrl()
 // %ray is a vector through the viewing 
 // frustum corresponding to the clicked pixel
 function PlayGui::onRightMouseDown(%this, %pos, %start, %ray)
-{   
+{
+    // Moved most of this to a client command - this lets us check to see if 
+    // we have a unit selected to move before drawing pictures on the ground
+    // to show where we're moving it.
     commandToServer('movePlayer', %pos, %start, %ray);
 }
 
@@ -99,7 +102,8 @@ function PlayGui::onMouseDown(%this, %pos, %start, %ray)
 }
 
 // This function is the callback that handles our new button.  When you click it
-// the button tells the PlayGui that we're now in building placement mode.
+// the button tells the PlayGui that we're now in building placement mode and what
+// kind of building we want to make.
 function orcBurrowButton::onClick(%this)
 {
     PlayGui.placingBuilding = true;

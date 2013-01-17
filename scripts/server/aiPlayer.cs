@@ -25,6 +25,10 @@
 // fallback.
 //-----------------------------------------------------------------------------
 
+/// <summary>
+/// This function is called by the unit's datablock onReachDestination() callback to 
+/// act as a default callback handler.
+/// </summary>
 function AIPlayer::ReachDestination(%this)
 {
     // Moves to the next node on the path.
@@ -60,17 +64,29 @@ function AIPlayer::ReachDestination(%this)
         %this.pushTask("attack" TAB %this.target);
 }
 
+/// <summary>
+/// This function is called by the unit's datablock onMoveStuck() callback to 
+/// act as a default callback handler.
+/// </summary>
 function AIPlayer::MoveStuck(%this)
 {
    //echo( %obj @ " onMoveStuck" );
 }
 
+/// <summary>
+/// This function is called by the unit's datablock onTargetExitLOS() callback to 
+/// act as a default callback handler.
+/// </summary>
 function AIPlayer::TargetExitLOS(%this)
 {
     %this.pushTask("fire" TAB %this TAB false);
     %this.setMoveDestination(%this.targetLKP);
 }
 
+/// <summary>
+/// This function is called by the unit's datablock onTargetEnterLOS() callback to 
+/// act as a default callback handler.
+/// </summary>
 function AIPlayer::TargetEnterLOS(%this)
 {
     if ( %this.target != %this && isObject(%this.target) )
@@ -78,11 +94,20 @@ function AIPlayer::TargetEnterLOS(%this)
     %this.pushTask("attack" TAB %this.target);
 }
 
+/// <summary>
+/// This function is called by the unit's datablock onEndOfPath() callback to 
+/// act as a default callback handler.
+/// </summary>
+/// <param name="path">The path the unit is assigned to.</param>
 function AIPlayer::EndOfPath(%this,%path)
 {
    %this.nextTask();
 }
 
+/// <summary>
+/// This function stops the unit's current animation sequence.
+/// </summary>
+/// <param name="slot">The animation slot to stop.</param>
 function AIPlayer::EndSequence(%this,%slot)
 {
    echo("Sequence Done!");
@@ -94,6 +119,10 @@ function AIPlayer::EndSequence(%this,%slot)
 // AIPlayer static functions
 //-----------------------------------------------------------------------------
 
+/// <summary>
+/// This function removes the calling unit from its AIClientManager and from
+/// its team list if it is part of a multi-select group.
+/// </summary>
 function AIPlayer::removeFromTeam(%this)
 {
     %teamList = "Team"@%this.team@"List";
@@ -102,6 +131,14 @@ function AIPlayer::removeFromTeam(%this)
         %teamList.remove(%this);
 }
 
+/// <summary>
+/// This function spawns a new AI unit.
+/// </summary>
+/// <param name="name">The name to assign to the unit.  Should be "" for none.</param>
+/// <param name="spawnPoint">The spawn point to spawn the unit at.  Can also be a vector location.</param>
+/// <param name="datablock">The datablock to use for the new unit.</param>
+/// <param name="priority">The priority to assign to the unit.  Defaults to 1.</param>
+/// <return>Returns the new unit.</return>
 function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 {
     // Create the demo player object
@@ -122,6 +159,14 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     return %player;
 }
 
+/// <summary>
+/// This function spawns an AI unit on a path.
+/// </summary>
+/// <param name="name">The name to assign to the player. Should be "" for none.</param>
+/// <param name="path">The path object to assign the unit to.</param>
+/// <param name="datablock">The datablock to use for the unit.</param>
+/// <param name="priority">The priority to assign to the unit.  Defaults to 1.</param>
+/// <return>Returns the new unit.</return>
 function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
 {
    // Spawn a player and place him on the first node of the path
@@ -132,6 +177,13 @@ function AIPlayer::spawnOnPath(%name, %path, %datablock, %priority)
    return %player;
 }
 
+/// <summary>
+/// This function determines if the target is within the unit's line of sight.  It
+/// sets a variable to indicate the point at which our line of sight is obstructed
+/// in the event there is no clear view so that the unit can move toward the target.
+/// </summary>
+/// <param name="target">The target of our visual search.</param>
+/// <return>True if target can be seen, false if not.</return>
 function AIPlayer::getLOS(%this, %target)
 {
     if (!isObject(%target))
@@ -204,6 +256,9 @@ function AIPlayer::underAttack(%this, %msgData)
     }
 }
 
+/// <summary>
+/// This function sets a flag to prevent the unit for repeatedly crying for help.
+/// </summary>
 function AIPlayer::notifyAttackResponse(%this)
 {
     %this.receivedAttackResponse = true;
@@ -676,6 +731,11 @@ function AIPlayer::checkTargetStatus(%this)
     %this.nextTask();
 }
 
+/// <summary>
+/// This function evaluates the unit's current health and ammo levels to determine
+/// if we should look for healing or resupply.  This can be overridden by the unit's
+/// datablock.
+/// </summary>
 function AIPlayer::evaluateCondition(%this)
 {
     %datablock = %this.getDataBlock();
@@ -701,6 +761,9 @@ function AIPlayer::evaluateCondition(%this)
     %this.nextTask();
 }
 
+/// <summary>
+/// This function searches first for health kits and then for a barracks.
+/// </summary>
 function AIPlayer::findHealing(%this)
 {
     %obj = %this.findHealthKit();
@@ -716,6 +779,10 @@ function AIPlayer::findHealing(%this)
         %this.setMoveDestination(%dest);
 }
 
+/// <summary>
+/// This function returns the first health kit to turn up in a container search.
+/// May need to filter for distance....
+/// </summary>
 function AIPlayer::findHealthKit(%this)
 {
     initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::ItemObjectType);
@@ -734,6 +801,9 @@ function AIPlayer::findHealthKit(%this)
     return %obj;
 }
 
+/// <summary>
+/// This function searches first for ammo drops and then for a barracks to rearm.
+/// </summary>
 function AIPlayer::findAmmo(%this)
 {
     %obj = %this.findAmmoDrop();
@@ -749,6 +819,10 @@ function AIPlayer::findAmmo(%this)
         %this.setMoveDestination(%dest);
 }
 
+/// <summary>
+/// This function returns the first ammo item to turn up in a container search.
+/// May need to filter for distance....
+/// </summary>
 function AIPlayer::findAmmoDrop(%this)
 {
     initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::ItemObjectType);
@@ -772,6 +846,10 @@ function AIPlayer::findAmmoDrop(%this)
     return %obj;
 }
 
+/// <summary>
+/// This function returns the first barracks to turn up in a container search.
+/// May need to filter for distance....
+/// </summary>
 function AIPlayer::findBarracks(%this)
 {
     initContainerRadiusSearch(%this.getPosition(), 100.0, $TypeMasks::StaticObjectType);
