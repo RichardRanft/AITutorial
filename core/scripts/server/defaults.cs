@@ -6,7 +6,8 @@
 // List of master servers to query, each one is tried in order
 // until one responds
 $Pref::Server::RegionMask = 1;
-$pref::Master[0] = "1:68.227.49.58:28002";
+$pref::Master[0] = "2:master.garagegames.com:28002";
+$pref::Master[1] = "2:68.227.49.58:28002";
 
 // Information about the server
 $Pref::Server::Name = "Torque 3D Server";
