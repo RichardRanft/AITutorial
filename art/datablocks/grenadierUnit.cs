@@ -150,19 +150,26 @@ function GrenadierUnitData::think(%this, %obj)
 function GrenadierUnitData::underAttack(%this, %obj, %msgData)
 {
     %unit = getField(%msgData, 0);
+    %unitPos = %unit.getPosition();
+    %objPos = %obj.getPosition();
     %source = getField(%msgData, 3);
     if (%source.sourceObject.team == %obj.team)
         return;
-    %dest = %unit.getPosition();
-    %dist = VectorDist(%dest, %obj.getPosition()) - $AIEventManager::GrenadierAttackResponseDist;
+    %dist = VectorDist(%unitPos, %objPos) - $AIEventManager::GrenadierAttackResponseDist;
     %distWeight = (1/(%dist > 0 ? %dist : 1));
     if (%distWeight > 0.1)
     {
+        %obj.target = %source.sourceObject;
+        // if we can't see the target, move closer to ally
+        // otherwise just "evade" (ok, run around randomly).
+        if (!%obj.getLOS(%obj.target))
+            %dest = %unitPos;
+        else
+            %dest = %objPos;
         %offsetX = getRandom(-20, 20);
         %offsetY = getRandom(-20, 20);
         %dest.x += %offsetX;
         %dest.y += %offsetY;
-        %obj.target = %source.sourceObject;
         %obj.setMoveDestination(%dest);
         %unit.notifyAttackResponse();
         %obj.respondedTo = %unit;

@@ -246,19 +246,26 @@ function AIPlayer::unitUnderAttack(%this, %msgData)
 function AIPlayer::underAttack(%this, %msgData)
 {
     %unit = getField(%msgData, 0);
+    %unitPos = %unit.getPosition();
+    %thisPos = %this.getPosition();
     %source = getField(%msgData, 3);
     if (%source.sourceObject.team == %this.team)
         return;
-    %dest = %unit.getPosition();
-    %dist = VectorDist(%dest, %this.getPosition()) - $AIEventManager::DefaultAttackResponseDist;
+    %dist = VectorDist(%unitPos, %thisPos) - $AIEventManager::DefaultAttackResponseDist;
     %distWeight = (1/(%dist > 0 ? %dist : 1));
     if (%distWeight > 0.1)
     {
+        %this.target = %source.sourceObject;
+        // if we can't see the target, move closer to ally
+        // otherwise just "evade" (ok, run around randomly).
+        if (!%this.getLOS(%this.target))
+            %dest = %unitPos;
+        else
+            %dest = %thisPos;
         %offsetX = getRandom(-20, 20);
         %offsetY = getRandom(-20, 20);
         %dest.x += %offsetX;
         %dest.y += %offsetY;
-        %this.target = %source.sourceObject;
         %this.setMoveDestination(%dest);
         %unit.notifyAttackResponse();
         %this.respondedTo = %unit;
