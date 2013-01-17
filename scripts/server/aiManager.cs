@@ -409,8 +409,8 @@ function AIManager::loadOutUnit(%this, %unit, %infiniteAmmo)
     %unit.setInventory(%ammo, %unit.maxInventory(%ammo));    // Start the gun loaded
     %unit.addToWeaponCycle(%weapon);
 
-    if (%unit.getDatablock().mainWeapon.image !$= "")
-        %unit.mountImage(%unit.getDatablock().mainWeapon.image, 0);
+    if (%weapon !$= "")
+        %unit.mountImage(%weapon, 0);
     else
         %unit.mountImage(Lurker, 0);
 }

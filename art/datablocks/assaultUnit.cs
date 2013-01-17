@@ -62,7 +62,9 @@ function AssaultUnitData::fire(%this, %obj)
     %validTarget = isObject(%obj.target);
     if (!%validTarget || %obj.target.getState() $= "dead" || %obj.getState() $= "dead")
     {
-        cancel(%obj.trigger);
+        if (%obj.trigger)
+            cancel(%obj.trigger);
+        %obj.trigger = "";
         %obj.pushTask("clearTarget");
         return;
     }

@@ -794,6 +794,12 @@ function AIPlayer::clearTarget(%this)
 {
     %this.setAimObject(0);
     %this.target = "";
+    if (%this.trigger)
+    {
+        cancel(%this.trigger);
+        %this.trigger = "";
+    }
+    %this.canFire = true;
     %this.receivedAttackResponse = false;
     %this.schedule(32, "setImageTrigger", 0, 0);
     %this.nextTask();
