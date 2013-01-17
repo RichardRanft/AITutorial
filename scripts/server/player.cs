@@ -266,8 +266,8 @@ function Armor::onDisabled(%this, %obj, %state)
       %amount = %obj.getInventory(%item.image.ammo);
       
       if (%item.image.clip $= "")
-         warn("No clip exists to throw for item ", %item);
-      if(%amount)
+         %obj.throw(%item.image.ammo, 1);
+      else if(%amount)
          %obj.throw(%item.image.clip, 1);
    }
 

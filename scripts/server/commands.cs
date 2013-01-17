@@ -228,7 +228,10 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
             {
                 if (%unit.isSelected)
                 {
-                    %dest = VectorSub(%pos, %unit.destOffset);
+                    if (%unit.destOffest $= "")
+                        %unit.destOffset = "0 0 0";
+
+                    %dest = VectorAdd(%pos, %unit.destOffset);
                     %unit.setMoveDestination( %dest );
                 }
                 %c++;
@@ -298,8 +301,10 @@ function serverCmdcheckTarget(%client, %pos, %start, %ray)
                 else
                 {
                     cleanupSelectGroup(%client.team);
+                    addTeamBot(%target, %client.team);
                     %target.isSelected = true;
                     %target.isLeader = true;
+                    %target.destOffset = "0 0 0";
                 }
             }
         }
@@ -467,7 +472,7 @@ function multiSelect(%target, %team)
     }
     
     %leader = findTeamLeader(%team);
-    if (isObject(%leader))
+    if (isObject(%leader) && %leader != %target)
     {
         %target.destOffset = VectorSub(%leader.getPosition(), %target.getPosition());
     }
@@ -478,7 +483,7 @@ function multiSelect(%target, %team)
     }
 
     %target.isSelected = true;
-    %teamList.add(%target);
+    addTeamBot(%target, %team);
 }
 
 function findTeamLeader(%team)

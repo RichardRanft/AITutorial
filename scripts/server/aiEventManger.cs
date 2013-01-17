@@ -23,7 +23,7 @@ function initializeAIEventManager()
     {
         $AIListener = new ScriptMsgListener(AIListener) 
         { 
-            class = "AIListener"; 
+            class = "AIEventListener"; 
         };
         
         // Module related subscriptions
@@ -49,6 +49,6 @@ function destroyAIEventManager()
     }
 }
 
-function AIListener::unitUnderAttack(%this, %messageData)
+function AIEventListener::unitUnderAttack(%this, %messageData)
 {
 }

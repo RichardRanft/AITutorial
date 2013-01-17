@@ -20,6 +20,7 @@ datablock PlayerData(DemoPlayerData : DefaultPlayerData)
     shootingDelay = 1000;
     corpseFadeTime = 2000;
     mainWeapon = "Ryder";
+    moveTolerance = 1.0;
 };
 
 // ----------------------------------------------------------------------------

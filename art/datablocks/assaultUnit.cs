@@ -20,6 +20,7 @@ datablock PlayerData(AssaultUnitData : DefaultPlayerData)
     shootingDelay = 500;
     corpseFadeTime = 2000;
     mainWeapon = "Lurker";
+    moveTolerance = 1.0;
 };
 
 // ----------------------------------------------------------------------------

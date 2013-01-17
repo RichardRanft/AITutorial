@@ -20,6 +20,7 @@ datablock PlayerData(GrenadierUnitData : DefaultPlayerData)
     shootingDelay = 3000;
     corpseFadeTime = 2000;
     mainWeapon = "LurkerGrenadeLauncher";
+    moveTolerance = 1.0;
 };
 
 // ----------------------------------------------------------------------------
@@ -140,4 +141,30 @@ function GrenadierUnitData::think(%this, %obj)
         return;
     }
     %obj.pushTask("clearTarget");
+}
+
+/// <summary>
+/// This function handles the unitUnderAttack event for GrenadierUnitData, overriding
+/// the default AIPlayer version.
+/// </summary>
+function GrenadierUnitData::underAttack(%this, %obj, %msgData)
+{
+    %unit = getField(%msgData, 0);
+    %source = getField(%msgData, 3);
+    if (%source.sourceObject.team == %obj.team)
+        return;
+    %dest = %unit.getPosition();
+    %dist = VectorDist(%dest, %obj.getPosition()) - $AIEventManager::GrenadierAttackResponseDist;
+    %distWeight = (1/(%dist > 0 ? %dist : 1));
+    if (%distWeight > 0.1)
+    {
+        %offsetX = getRandom(-20, 20);
+        %offsetY = getRandom(-20, 20);
+        %dest.x += %offsetX;
+        %dest.y += %offsetY;
+        %obj.target = %source.sourceObject;
+        %obj.setMoveDestination(%dest);
+        %unit.notifyAttackResponse();
+        %obj.respondedTo = %unit;
+    }
 }

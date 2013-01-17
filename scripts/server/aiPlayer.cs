@@ -70,7 +70,12 @@ function AIPlayer::ReachDestination(%this)
 /// </summary>
 function AIPlayer::MoveStuck(%this)
 {
-   //echo( %obj @ " onMoveStuck" );
+    %x = getRandom(-5, 5);
+    %y = getRandom(-5, 5);
+    %vec = %x SPC %y SPC "0";
+    %dest = VectorAdd(%this.getPosition(), %vec);
+    %this.setMoveDestination(%dest);
+    echo(" @@@ unit " @ %this @ " stuck - attempting to redirect to " @ %dest);
 }
 
 /// <summary>
@@ -125,10 +130,13 @@ function AIPlayer::EndSequence(%this,%slot)
 /// </summary>
 function AIPlayer::removeFromTeam(%this)
 {
-    %teamList = "Team"@%this.team@"List";
     %this.AIClientMan.removeUnit(%this);
-    if (%teamList.isMember(%this))
-        %teamList.remove(%this);
+    %teamList = "Team"@%this.team@"List";
+    if (isObject(%teamList))
+    {
+        if (%teamList.isMember(%this))
+            %teamList.remove(%this);
+    }
 }
 
 /// <summary>
@@ -150,6 +158,7 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
 
     %player.shootingDelay = %datablock.shootingDelay;
     %player.damageLvl = 0;
+    %player.moveTolerance = (%datablock.moveTolerance !$= "" ? %datablock.moveTolerance : 0.25);
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
     if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
@@ -223,11 +232,10 @@ function AIPlayer::unitUnderAttack(%this, %msgData)
     %method  = getField(%msgData, 1);
     %datablock = %this.getDataBlock();
     if (%datablock.isMethod(%method))
-        eval(%datablock.getName()@"."@%method@"(\""@%msgData@"\");");
+        eval(%datablock.getName()@"."@%method@"(%this, \""@%msgData@"\");");
     else if (%this.isMethod(%method))
     {
         eval("%this."@%method@"(\""@%msgData@"\");");
-        %this.respondedTo = %unit;
     }
 }
 
@@ -253,6 +261,7 @@ function AIPlayer::underAttack(%this, %msgData)
         %this.target = %source.sourceObject;
         %this.setMoveDestination(%dest);
         %unit.notifyAttackResponse();
+        %this.respondedTo = %unit;
     }
 }
 
@@ -879,6 +888,7 @@ function AIPlayer::clearTarget(%this)
     }
     %this.canFire = true;
     %this.receivedAttackResponse = false;
+    %this.respondedTo = "";
     %this.schedule(32, "setImageTrigger", 0, 0);
     %this.nextTask();
 }
