@@ -1,6 +1,23 @@
 //-----------------------------------------------------------------------------
-// Torque
-// Copyright GarageGames, LLC 2011
+// Copyright (c) 2012 GarageGames, LLC
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 datablock SFXProfile(cheetahEngine)
@@ -38,7 +55,7 @@ datablock SFXProfile(DirtKickup)
    fileName = "art/sound/cheetah/softImpact.ogg";
 };
 
-datablock SFXProfile(TurretFireSound)
+datablock SFXProfile(CheetahTurretFireSound)
 {
    filename = "art/sound/cheetah/turret_firing.wav";
    description = BulletFireDesc;
@@ -203,7 +220,7 @@ datablock ShapeBaseImageData(TurretImage)
    stateSequence[3]                 = "Fire";
    stateSequenceRandomFlash[3]      = true;        // use muzzle flash sequence
    stateScript[3]                   = "onFire";
-   stateSound[3]                    = TurretFireSound;
+   stateSound[3]                    = CheetahTurretFireSound;
    stateEmitter[3]                  = TurretFireSmokeEmitter;
    stateEmitterTime[3]              = 0.025;
 
@@ -257,7 +274,7 @@ datablock WheeledVehicleTire(CheetahCarTire)
    // forces to move the vehicle. These distortion/spring forces
    // are what convert wheel angular velocity into forces that
    // act on the rigid body.
-   shapeFile = "art/shapes/Cheetah/wheel.dae";
+   shapeFile = "art/shapes/Cheetah/wheel.DAE";
    staticFriction = 4.2;
    kineticFriction = "1";
 
@@ -279,7 +296,7 @@ datablock WheeledVehicleTire(CheetahCarTireRear)
    // forces to move the vehicle. These distortion/spring forces
    // are what convert wheel angular velocity into forces that
    // act on the rigid body.
-   shapeFile = "art/shapes/Cheetah/wheelBack.dae";
+   shapeFile = "art/shapes/Cheetah/wheelBack.DAE";
    staticFriction = "7.2";
    kineticFriction = "1";
 
@@ -307,7 +324,7 @@ datablock WheeledVehicleSpring(CheetahCarSpring)
 datablock WheeledVehicleData(CheetahCar)
 {
    category = "Vehicles";
-   shapeFile = "art/shapes/Cheetah/Cheetah_Body.dae";
+   shapeFile = "art/shapes/Cheetah/Cheetah_Body.DAE";
    emap = 1;
 
    mountPose[0] = sitting;

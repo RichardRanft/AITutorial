@@ -76,10 +76,12 @@ function GrenadierUnitData::fire(%this, %obj)
     %velocity = %objWeapon.projectile.muzzleVelocity;
     %range = %obj.getTargetDistance(%obj.target);
     if (%range > $AIPlayer::GrenadierRange)
-        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, true, $AIPlayer::GrenadeGravityModifier);
+        //%offset = %obj.GetBallisticAimPos(%obj.target.getPosition(), %velocity, true, $AIPlayer::GrenadeGravityModifier);
+        %offset = %obj.getBallisticAimOffset(%obj.target.getPosition(), %velocity, true, $AIPlayer::GrenadeGravityModifier);
     else
-        %offset = %obj.getBallisticAimPos(%obj.target.getPosition(), %velocity, false, $AIPlayer::GrenadeGravityModifier * 0.85);
-    if ( %offset == -1 )
+        //%offset = %obj.GetBallisticAimPos(%obj.target.getPosition(), %velocity, false, $AIPlayer::GrenadeGravityModifier);
+        %offset = %obj.getBallisticAimOffset(%obj.target.getPosition(), %velocity, false, $AIPlayer::GrenadeGravityModifier * 0.85);
+    if ( %offset == -1.0 )
     {
         %obj.schedule(32, pushTask, "closeOnTarget");
         %obj.schedule(64, pushTask, "fire" TAB true);
@@ -106,7 +108,7 @@ function GrenadierUnitData::think(%this, %obj)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.target = %obj.damageSourceObj.sourceObject;
-			if (!%obj.receivedAttackResponse)
+			if (!%obj.receivedAttackResponse || %damageLvl < (%this.maxDamage * $AIPlayer::UrgentDamageThreshold))
 			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}

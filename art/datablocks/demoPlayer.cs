@@ -92,7 +92,7 @@ function DemoPlayerData::think(%this, %obj)
 		{
 			%obj.damageLvl = %damageLvl;
 			%obj.target = %obj.damageSourceObj.sourceObject;
-			if (!%obj.receivedAttackResponse)
+			if (!%obj.receivedAttackResponse || %damageLvl < (%this.maxDamage * $AIPlayer::UrgentDamageThreshold))
 			    AIEventManager.postEvent("_UnitUnderAttack", %obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 		}
 	}
