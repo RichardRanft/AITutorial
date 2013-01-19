@@ -5,13 +5,13 @@
 
 // List of master servers to query, each one is tried in order
 // until one responds
-$Pref::Server::RegionMask = 1;
+$Pref::Server::RegionMask = 2;
 $pref::Master[0] = "2:master.garagegames.com:28002";
 $pref::Master[1] = "2:68.227.49.58:28002";
 
 // Information about the server
-$Pref::Server::Name = "Torque 3D Server";
-$Pref::Server::Info = "This is a Torque 3D server.";
+$Pref::Server::Name = "AI Tutorial Server";
+$Pref::Server::Info = "This is an AI Tutorial server.";
 
 // The connection error message is transmitted to the client immediatly
 // on connection, if any further error occures during the connection
@@ -20,7 +20,7 @@ $Pref::Server::Info = "This is a Torque 3D server.";
 // usefull to the client, such as the url or ftp address of where the
 // latest version of the game can be obtained.
 $Pref::Server::ConnectionError =
-   "You do not have the correct version of the FPS starter kit or "@
+   "You do not have the correct version of the AI Tutorial or "@
    "the related art needed to play on this server, please contact "@
    "the server operator for more information.";
 
