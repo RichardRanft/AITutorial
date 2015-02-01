@@ -331,7 +331,6 @@ function AIManager::priorityThink(%this)
         %unit.schedule(%time, think);
         %index++;
     }
-    //%this.schedule(%this.priorityTime, "priorityThink");
 }
 
 /// <summary>
@@ -350,11 +349,10 @@ function AIManager::idleThink(%this)
         %unit.schedule(%time, think);
         %index++;
     }
-    //%this.schedule(%this.idleTime, "idleThink");
 }
 
 /// <summary>
-/// This function asks AIPlayerEx to spawn a unit.
+/// This function asks AIPlayer to spawn a unit.
 /// </summary>
 /// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
 /// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>

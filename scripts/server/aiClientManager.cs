@@ -3,7 +3,9 @@
 //-----------------------------------------------------------------------------
 // This system should handle messages from units that belong to the client that
 // it is assigned to.
+
 $AIClientManager::ThinkTime = 500;
+
 if (!isObject(AIClientManager))
     new ScriptObject(AIClientManager);
 
@@ -51,6 +53,10 @@ function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %pri
     return %newUnit;
 }
 
+/// <summary>
+/// This function removes the unit specified from the group.
+/// </summary>
+/// <param name="unit">The unit to remove.</param>
 function AIClientManager::removeUnit(%this, %unit)
 {
     if (%this.unitList.isMember(%unit))
@@ -171,7 +177,7 @@ function AIClientManager::handleMessage(%this, %message)
 //
 // %obj.AIClientMan.sendMessage(%obj TAB "underAttack" TAB %damageLvl TAB %obj.damageSourceObj);
 //
-// %obj is the unit.  It's AIClientManager is assigned to it when it is spawned in
+// %obj is the unit.  Its AIClientManager is assigned to it when it is spawned in
 // AIClient::addUnit().  Wherever you send a message from you can use this to do it.
 // The message is a tab-delimited string that is expected to be composed like so:
 //

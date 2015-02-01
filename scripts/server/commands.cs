@@ -245,8 +245,9 @@ function serverCmdmovePlayer(%client, %pos, %start, %ray)
             {
                 if (%unit.isSelected)
                 {
-                    if (%unit.destOffest $= "")
-                        %unit.destOffset = "0 0 0";
+                    %xOffset = (getRandom() * 5) + 3;
+                    %yOffset = (getRandom() * 5) + 3;
+                    %unit.destOffset = %xOffset SPC %yOffset SPC "0";
 
                     %dest = VectorAdd(%pos, %unit.destOffset);
                     %unit.setMoveDestination( %dest );
@@ -287,7 +288,7 @@ function serverCmdcheckTarget(%client, %pos, %start, %ray)
         {
             serverCmdspawnTeammate(%client, %target);
         }
-        else if (%target.getClassName() $= "AIPlayerEx")
+        else if (%target.getClassName() $= "AIPlayer")
         {
             if (%target.team != %client.team)
             {

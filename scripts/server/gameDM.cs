@@ -106,21 +106,28 @@ function DeathMatchGame::onClientEnterGame(%game, %client)
 
     parent::onClientEnterGame(%game, %client);
 
+    // Start the AIManager if it hasn't been already
     if (!AIManager.started)
-        AIManager.start(200, 1000);
-    if (!AIClientManager.started)
-        AIClientManager.start(500);
-    AIClientManager.client = 0;
+        AIManager.start($AIManager::PriorityTime, $AIManager::IdleTime);
 
+    // Start an "AIClientManager" for the server
+    if (!AIClientManager.started)
+    {
+        AIClientManager.start($AIClientManager::ThinkTime);
+        AIClientManager.client = 0;
+    }
+
+    // Create a team ID for use by the AI Units for sorting friend from foe
     if (%client.team $= "")
         %client.team = %client.getId();
 
+    // Create an AIClientManager for the incomming client
     %client.AIMan = new ScriptObject()
     {
         class = AIClientManager;
     };
     %client.AIMan.client = %client;
-    %client.AIMan.start(500);
+    %client.AIMan.start($AIClientManager::ThinkTime);
 }
 
 function DeathMatchGame::preparePlayer(%game, %client)
