@@ -173,7 +173,7 @@ function AIClientManager::handleMessage(%this, %message)
 //
 // %obj is the unit.  It's AIClientManager is assigned to it when it is spawned in
 // AIClient::addUnit().  Wherever you send a message from you can use this to do it.
-// The message is a tab-delimited string that is expected to be compose as so:
+// The message is a tab-delimited string that is expected to be composed like so:
 //
 // <sending unit> TAB <message name> TAB <tab-delimited handler parameters>
 //

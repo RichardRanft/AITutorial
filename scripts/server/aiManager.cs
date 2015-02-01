@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------------
 $AIManager::PriorityTime = 200;
 $AIManager::IdleTime = 1000;
-$AIManager::PriorityRadius = 75;
+$AIManager::PriorityRadius = 100;
 $AIManager::SleepRadius = 250;
 $AIManager::ThinkTime = 500;
 
@@ -96,7 +96,7 @@ function AIManager::addUnit(%this, %name, %spawnLocation, %datablock, %priority,
 function AIManager::think(%this)
 {
     // The purpose here is to reduce overhead from AI for units that are
-    // farther "from the action."  So I'm using sorting units from one 
+    // farther "from the action."  So I'm sorting units from one 
     // list to another based on the unit's distance from the nearest 
     // player's camera, since any unit near any player's 
     // camera needs to be "thinking" at the correct priority.
@@ -189,7 +189,15 @@ function AIManager::think(%this)
 		}
 		%index--;
 	}
-    %this.schedule(%this.thinkTime, "think");
+
+    %this.timeCount += %this.priorityTime;
+    if (%this.timeCount >= %this.idleTime)
+    {
+        %this.timeCount = 0;
+        %this.idleThink();
+    }
+    %this.priorityThink();
+    %this.schedule(%this.priorityTime, "think");
 }
 
 /// <summary>
@@ -220,7 +228,7 @@ function AIManager::findNearestClientPosition(%this, %position)
 }
 
 /// <summary>
-/// This function finds the nearest client to the position in question.
+/// This function finds the nearest friendly unit to the specified unit
 /// </summary>
 /// <param name="position">The position to test clients against.</param>
 /// <return>Returns the position of the client nearest to <position>.</return>
@@ -265,7 +273,7 @@ function AIManager::findNearestUnit(%this, %unit, %radius)
 }
 
 /// <summary>
-/// This function finds the nearest client to the position in question.
+/// This function finds the nearest hostile unit to the specified unit
 /// </summary>
 /// <param name="position">The position to test clients against.</param>
 /// <return>Returns the position of the client nearest to <position>.</return>
@@ -319,11 +327,11 @@ function AIManager::priorityThink(%this)
     {
         %unit = %this.priorityGroup.getObject(%index);
         %step = %this.priorityTime / %count;
-        %time = 32 + (%index * %step);
+        %time = %this.priorityTime + (%index * %step);
         %unit.schedule(%time, think);
         %index++;
     }
-    %this.schedule(%this.priorityTime, "priorityThink");
+    //%this.schedule(%this.priorityTime, "priorityThink");
 }
 
 /// <summary>
@@ -338,15 +346,15 @@ function AIManager::idleThink(%this)
     {
         %unit = %this.idleGroup.getObject(%index);
         %step = %this.idleTime / %count;
-        %time = 32 + (%index * %step);
+        %time = %this.idleTime + (%index * %step);
         %unit.schedule(%time, think);
         %index++;
     }
-    %this.schedule(%this.idleTime, "idleThink");
+    //%this.schedule(%this.idleTime, "idleThink");
 }
 
 /// <summary>
-/// This function asks AIPlayer to spawn a unit.
+/// This function asks AIPlayerEx to spawn a unit.
 /// </summary>
 /// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
 /// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>
@@ -380,6 +388,7 @@ function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %
             %location = PlayerDropPoints.getObject(%index);
         }
         %player = AIPlayer::spawn(%name, %location, %datablock, %priority);
+        %player.spawning = true;
 
         if (isObject(%player))
             return %player;
@@ -390,6 +399,7 @@ function AIManager::spawn(%this, %name, %spawnLocation, %datablock, %priority, %
 
 /// <summary>
 /// This function loads out the unit with the equipment it should have based on 
+/// the default weapon defined in its datablock.
 /// </summary>
 /// <param name="unit">The unit to equip.</param>
 /// <param name="infiniteAmmo">If true, the weapon will not consume ammo.</param>
@@ -398,10 +408,11 @@ function AIManager::loadOutUnit(%this, %unit, %infiniteAmmo)
     %unit.clearWeaponCycle();
     
     %datablock = %unit.getDatablock();
-    %weapon = %datablock.mainWeapon.image;
-    %weapon.infiniteAmmo = %infiniteAmmo;
-    %clip = %weapon.clip;
-    %ammo = %weapon.ammo;
+    %weapon = %datablock.mainWeapon;
+    %weaponImage = %weapon.image;
+    %weaponImage.infiniteAmmo = %infiniteAmmo;
+    %clip = %weaponImage.clip;
+    %ammo = %weaponImage.ammo;
 
     %unit.setInventory(%weapon, 1);
     if (%clip !$= "")
@@ -409,8 +420,8 @@ function AIManager::loadOutUnit(%this, %unit, %infiniteAmmo)
     %unit.setInventory(%ammo, %unit.maxInventory(%ammo));    // Start the gun loaded
     %unit.addToWeaponCycle(%weapon);
 
-    if (%weapon !$= "")
-        %unit.mountImage(%weapon, 0);
+    if (%weaponImage !$= "")
+        %unit.mountImage(%weaponImage, 0);
     else
         %unit.mountImage(Lurker, 0);
 }

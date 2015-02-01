@@ -165,7 +165,8 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     // Create the demo player object
     %player = new AiPlayer()
     {
-        dataBlock = (%datablock !$= "" ? %datablock : DemoPlayer);
+        dataBlock = (%datablock !$= "" ? %datablock : DemoPlayerData);
+        class = "DemoPlayer";
     };
     %player.priority = (%priority !$= "" ? %priority : $AIPlayer::DefaultPriority);
 
@@ -174,6 +175,16 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     %player.moveTolerance = (%datablock.moveTolerance !$= "" ? %datablock.moveTolerance : 0.25);
     MissionCleanup.add(%player);
     %player.setShapeName(%name);
+
+   if (%player.getDatablock().mainWeapon.image !$= "")
+   {
+      %player.mountImage(%player.getDatablock().mainWeapon.image, 0);
+   }
+   else
+   {
+      %player.mountImage(Lurker, 0);
+   }
+
     if (isObject(%spawnPoint) && getWordCount(%spawnPoint) < 2)
         %player.setTransform(%spawnPoint.getPosition());
     else
@@ -1002,5 +1013,62 @@ function AIPlayer::aimAt(%this, %object)
 function AIPlayer::think(%this)
 {
     %datablock = %this.getDataBlock();
-    %datablock.think(%this);
+    if(%datablock.isMethod("think"))
+        %datablock.think(%this);
+    else
+    {
+        // default think routine
+        if(%this.getState() $= "dead")
+            return;
+        %damageLvl = %this.getDamageLevel();
+        if (%damageLvl > 0)
+        {
+            if (%damageLvl > %this.damageLvl)
+            {
+                %this.damageLvl = %damageLvl;
+                %this.target = %this.damageSourceObj.sourceObject;
+                if (!%this.receivedAttackResponse || %damageLvl < (%this.maxDamage * $AIPlayer::UrgentDamageThreshold))
+                    AIEventManager.postEvent("_UnitUnderAttack", %this TAB "underAttack" TAB %damageLvl TAB %this.damageSourceObj);
+            }
+        }
+        %canFire = (%this.trigger !$= "" ? !isEventPending(%this.trigger) : true);
+        // bail - can't attack anything right now anyway, why bother with the search?
+        if (!%canFire)
+            return;
+
+        if (!isObject(%this.target))
+        {
+            %target = %this.getNearestTarget(100.0);
+            if (isObject(%target))
+            {
+                if (%this.seeTarget(%this.getPosition(), %target.getPosition(), %this.getAngleTo(%target.getPosition(), 80.0)))
+                    %this.target = %target;
+            }
+        }
+        if (!isObject(%this.target))
+            %this.target = %this.findTargetInMissionGroup(25.0);
+
+        if (isObject(%this.target) && %this.target.getState() !$= "dead")
+        {
+            if (!%this.getLOS(%this.target))
+            {
+                %this.pushTask("fire" TAB %this TAB false);
+                %this.setMoveDestination(%this.intersectPos);
+            }
+            else if (%this.canFire)
+            {
+                %this.stop();
+                %this.pushTask("attack" TAB %this.target);
+            }
+
+            return;
+        }
+        if (isObject(%this.target) && %this.target.getState() $= "dead" || !isObject(%this.target))
+        {
+            %this.pushTask("fire" TAB false);
+            %this.pushTask("evaluateCondition");
+            return;
+        }
+        %this.pushTask("clearTarget");
+    }
 }

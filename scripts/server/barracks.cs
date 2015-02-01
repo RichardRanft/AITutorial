@@ -6,7 +6,13 @@ function BarracksTrigger::onEnterTrigger(%this,%trigger,%obj)
     %maxDamage = %obj.getDatablock().maxDamage;
     %state = %obj.getState();
     //echo(" @@@ " @ %obj @ " : " @ %maxDamage @"/"@ %damageLevel@" : " @ %state);
-    AIManager.loadOutUnit(%obj);
+
+    // Let's not do this twice on spawn....
+    if ( !%obj.spawning)
+        AIManager.loadOutUnit(%obj);
+    else
+        %obj.spawning = false;
+        
     if (%damageLevel != 0 && %state !$= "Dead" && %obj.team == %trigger.owner.team)
     {
         %obj.applyRepair(%maxDamage - %damageLevel);

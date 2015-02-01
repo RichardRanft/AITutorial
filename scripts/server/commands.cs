@@ -287,7 +287,7 @@ function serverCmdcheckTarget(%client, %pos, %start, %ray)
         {
             serverCmdspawnTeammate(%client, %target);
         }
-        else if (%target.getClassName() $= "AIPlayer")
+        else if (%target.getClassName() $= "AIPlayerEx")
         {
             if (%target.team != %client.team)
             {
