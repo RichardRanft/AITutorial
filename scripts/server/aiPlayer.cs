@@ -166,7 +166,7 @@ function AIPlayer::spawn(%name, %spawnPoint, %datablock, %priority)
     %player = new AiPlayer()
     {
         dataBlock = (%datablock !$= "" ? %datablock : DemoPlayerData);
-        class = "DemoPlayer";
+        //class = "DemoPlayer";
     };
     %player.priority = (%priority !$= "" ? %priority : $AIPlayer::DefaultPriority);
 

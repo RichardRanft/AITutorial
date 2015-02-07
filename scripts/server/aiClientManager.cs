@@ -30,7 +30,8 @@ function AIClientManager::start(%this, %thinkTime)
 }
 
 /// <summary>
-/// This function requests that the AIClientManager spawn a unit and add it to its group.
+/// This function requests that the AIClientManager spawn a unit and add it to its group.  If the unit datablock
+/// has multiple skins defined and the client doesn't have a skin defined, the system will pick a skin for each client.
 /// </summary>
 /// <param name="name">The desired unit name - this is the SimName of the object and must be unique or "".</param>
 /// <param name="spawnLocation">The position or object (spawnpoint, path object) to spawn the unit at.</param>
@@ -46,6 +47,29 @@ function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %pri
 		return 0;
 	}
     %newUnit = AIManager.addUnit(%name, %spawnLocation, %datablock, %priority, %onPath);
+
+    if (%this.client.skin $= "")
+    {
+        // Determine which character skins are not already in use
+        %availableSkins = %newUnit.getDatablock().availableSkins;             // TAB delimited list of skin names
+        %count = ClientGroup.getCount();
+        for (%cl = 0; %cl < %count; %cl++)
+        {
+            %other = ClientGroup.getObject(%cl);
+            if (%other != %client)
+            {
+                %availableSkins = strreplace(%availableSkins, %other.skin, "");
+                %availableSkins = strreplace(%availableSkins, "\t\t", "");     // remove empty fields
+            }
+        }
+
+        // Choose a random, unique skin for this client
+        %count = getFieldCount(%availableSkins);
+        %this.client.skin = addTaggedString( getField(%availableSkins, getRandom(%count)) );
+    }
+
+    %newUnit.setSkinName(%this.client.skin);
+
     %newUnit.team = (%this.client !$= "" ? %this.client : 0);
     %newUnit.AIClientMan = %this;
     AIEventManager.subscribe(%newUnit, "_UnitUnderAttack", "unitUnderAttack");

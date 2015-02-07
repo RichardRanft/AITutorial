@@ -683,9 +683,6 @@ function GameCore::onDeath(%game, %client, %sourceObject, %sourceClient, %damage
    // Clear out the name on the corpse
    %client.player.setShapeName("");
 
-   // Update the numerical Health HUD
-   %client.player.updateHealth();
-
    // Switch the client over to the death cam and unhook the player object.
    if (isObject(%client.camera) && isObject(%client.player))
    {
@@ -701,7 +698,7 @@ function GameCore::onDeath(%game, %client, %sourceObject, %sourceClient, %damage
    call( %sendMsgFunction, 'MsgClientKilled', %client, %sourceClient, %damLoc );
 
    // Dole out points and check for win
-   if ( %damageType $= "Suicide" || %sourceClient == %client )
+   if (( %damageType $= "Suicide" || %sourceClient == %client ) && isObject(%sourceClient))
    {
       %game.incDeaths( %client, 1, true );
       %game.incScore( %client, -1, false );

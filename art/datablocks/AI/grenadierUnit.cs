@@ -16,7 +16,7 @@
 
 datablock PlayerData(GrenadierUnitData : DefaultPlayerData)
 {
-    shapeFile = "~/shapes/actors/boombot/boombot.dts";
+    //shapeFile = "~/shapes/actors/boombot/boombot.dts";
     shootingDelay = 3000;
     corpseFadeTime = 2000;
     mainWeapon = "LurkerGrenadeLauncher";

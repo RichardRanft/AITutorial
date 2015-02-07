@@ -22,7 +22,7 @@
 
 // Some AI globals
 $AIPlayer::GrenadierRange = 40.0;
-$AIPlayer::GrenadeGravityModifier = 0.86;
+$AIPlayer::GrenadeGravityModifier = 0.84;
 $AIPlayer::DefaultPriority = 1;
 $AIPlayer::UrgentDamageThreshold = 0.8;
 $AIEventManager::DefaultAttackResponseDist = 30;
