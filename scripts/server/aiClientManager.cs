@@ -43,7 +43,7 @@ function AIClientManager::addUnit(%this, %name, %spawnLocation, %datablock, %pri
 {
 	if (%this.client $= "")
 	{
-		echo(" !!!! AIClientManager is not assigned to a client - cannot add unit");
+		error(" !!!! AIClientManager is not assigned to a client - cannot add unit");
 		return 0;
 	}
     %newUnit = AIManager.addUnit(%name, %spawnLocation, %datablock, %priority, %onPath);
@@ -98,6 +98,19 @@ function AIClientManager::removeUnit(%this, %unit)
         }
         %index--;
     }
+}
+
+/// <summary>
+/// This function clears the message queue and the unit list 
+/// of the AIClientManager.
+/// </summary>
+function AIClientManager::clear(%this)
+{
+    if(isObject(%this.messageQue))
+        %this.messageQue.clear();
+
+    if (isObject(%this.unitList))
+        %this.unitList.clear();
 }
 
 /// <summary>
